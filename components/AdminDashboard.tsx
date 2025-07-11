@@ -146,7 +146,6 @@ export default function AdminDashboard() {
 	const [selectedSubcategoryForBitly, setSelectedSubcategoryForBitly] = useState<Subcategory | null>(null); // Novo
 	const [editedBitlyUrl, setEditedBitlyUrl] = useState(""); // Novo
 
-	// Pagination states
 	const [currentPage, setCurrentPage] = useState(1);
 	const linksPerPage = 10;
 
@@ -184,11 +183,10 @@ export default function AdminDashboard() {
 			setRedirectsLast7Days(redirects7DaysData);
 			setRedirectsLast30Days(redirects30DaysData);
 		} catch (error) {
-			console.error("Error fetching data:", error);
 			toast({
 				title: "Erro",
 				description: "Erro ao carregar dados",
-				variant: "destructive",
+				variant: "error",
 			});
 		} finally {
 			setIsLoading(false);
@@ -206,7 +204,7 @@ export default function AdminDashboard() {
 			toast({
 				title: "Erro",
 				description: "Erro ao copiar link",
-				variant: "destructive",
+				variant: "error",
 			});
 		}
 	};
@@ -227,7 +225,7 @@ export default function AdminDashboard() {
 			setIsMasterCategoryDialogOpen(false);
 			fetchData();
 		} catch (error) {
-			toast({ title: "Erro", description: "Erro ao criar categoria master", variant: "destructive" });
+			toast({ title: "Erro", description: "Erro ao criar categoria master", variant: "error" });
 		}
 	};
 
@@ -240,7 +238,7 @@ export default function AdminDashboard() {
 			setIsCategoryDialogOpen(false);
 			fetchData();
 		} catch (error) {
-			toast({ title: "Erro", description: "Erro ao criar categoria", variant: "destructive" });
+			toast({ title: "Erro", description: "Erro ao criar categoria", variant: "error" });
 		}
 	};
 
@@ -253,7 +251,7 @@ export default function AdminDashboard() {
 			setIsSubcategoryDialogOpen(false);
 			fetchData();
 		} catch (error) {
-			toast({ title: "Erro", description: "Erro ao criar subcategoria", variant: "destructive" });
+			toast({ title: "Erro", description: "Erro ao criar subcategoria", variant: "error" });
 		}
 	};
 
@@ -266,7 +264,7 @@ export default function AdminDashboard() {
 			setIsLinkDialogOpen(false);
 			fetchData();
 		} catch (error) {
-			toast({ title: "Erro", description: "Erro ao criar link", variant: "destructive" });
+			toast({ title: "Erro", description: "Erro ao criar link", variant: "error" });
 		}
 	};
 
@@ -290,7 +288,7 @@ export default function AdminDashboard() {
 				setIsEditDialogOpen(false);
 				fetchData();
 			} catch (error) {
-				toast({ title: "Erro", description: "Erro ao atualizar link", variant: "destructive" });
+				toast({ title: "Erro", description: "Erro ao atualizar link", variant: "error" });
 			}
 		}
 	};
@@ -303,7 +301,7 @@ export default function AdminDashboard() {
 				setIsDeleteDialogOpen(false);
 				fetchData();
 			} catch (error) {
-				toast({ title: "Erro", description: "Erro ao excluir link", variant: "destructive" });
+				toast({ title: "Erro", description: "Erro ao excluir link", variant: "error" });
 			}
 		}
 	};
@@ -329,7 +327,7 @@ export default function AdminDashboard() {
 				setIsBitlyEditDialogOpen(false);
 				fetchData();
 			} catch (error) {
-				toast({ title: "Erro", description: "Erro ao atualizar link Bitly", variant: "destructive" });
+				toast({ title: "Erro", description: "Erro ao atualizar link Bitly", variant: "error" });
 			}
 		}
 	};
@@ -342,7 +340,7 @@ export default function AdminDashboard() {
 				setIsBitlyDeleteDialogOpen(false);
 				fetchData();
 			} catch (error) {
-				toast({ title: "Erro", description: "Erro ao excluir link Bitly", variant: "destructive" });
+				toast({ title: "Erro", description: "Erro ao excluir link Bitly", variant: "error" });
 			}
 		}
 	};

@@ -17,17 +17,12 @@ function deprecated(name: string): never {
 	);
 }
 
-/* --- GETs ---------------------------------------------------------------- */
-
 export const getCategories = () => deprecated("getCategories");
 export const getLinks = () => deprecated("getLinks");
 export const getLinksBySubcategory = () => deprecated("getLinksBySubcategory");
 export const getMasterCategories = () => deprecated("getMasterCategories");
 export const getSubcategories = () => deprecated("getSubcategories");
 export const getTotalRedirects = () => deprecated("getTotalRedirects");
-
-/* --- POSTs / MUTATIONS ---------------------------------------------------- */
-
 export const createCategory = () => deprecated("createCategory");
 export const createLink = () => deprecated("createLink");
 export const createMasterCategory = () => deprecated("createMasterCategory");

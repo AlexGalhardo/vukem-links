@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/libsql";
 import { createClient } from "@libsql/client";
 import * as schema from "../db/schema";
 import { config } from "dotenv";
+import { createUser } from "@/db/users.repository";
 
 config({ path: ".env.local" });
 
@@ -179,6 +180,9 @@ async function seed() {
 	}
 
 	console.log("Links criados.");
+
+	await createUser('admin@gmail.com', 'adminBR@123', 'Admin');
+
 	console.log("Seed do banco de dados concluído!");
 }
 

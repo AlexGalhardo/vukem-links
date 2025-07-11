@@ -1,8 +1,6 @@
 import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
-// Helper function to generate a CUID-like ID for mock purposes
-// In a real application, use a dedicated CUID library (e.g., @paralleldrive/cuid2)
 function generateUniqueId(): string {
 	const timestamp = Date.now().toString(36);
 	const random = Math.random().toString(36).substring(2, 8);
@@ -54,3 +52,17 @@ export const links = sqliteTable("links", {
 	clicks: integer("clicks").default(0).notNull(),
 	createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const users = sqliteTable("users", {
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => generateUniqueId()),
+	email: text("email").notNull().unique(),
+	password: text("password").notNull(),
+	name: text("name"),
+	createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
