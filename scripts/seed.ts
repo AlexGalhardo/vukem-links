@@ -1,147 +1,199 @@
-import { db } from "@/lib/db"
-import { masterCategories, categories, subcategories, links } from "@/db/schema"
+import { drizzle } from "drizzle-orm/libsql"
+import { createClient } from "@libsql/client"
+import * as schema from "../db/schema"
+import { config } from "dotenv"
 
-// Helper function to generate a CUID-like ID for mock purposes
-function generateUniqueId(): string {
-  const timestamp = Date.now().toString(36)
-  const random = Math.random().toString(36).substring(2, 8)
-  return `cl${timestamp}${random}`
-}
+config({ path: ".env.local" })
+
+const client = createClient({
+  url: process.env.TURSO_DATABASE_URL!,
+  authToken: process.env.TURSO_AUTH_TOKEN!,
+})
+
+const db = drizzle(client, { schema })
 
 async function seed() {
-  console.log("Iniciando o seed do banco de dados...")
+  console.log("Iniciando seed do banco de dados...")
 
-  // Limpar dados existentes (opcional, mas útil para testes)
-  await db.delete(links)
-  await db.delete(subcategories)
-  await db.delete(categories)
-  await db.delete(masterCategories)
+  // Limpar dados existentes
+  await db.delete(schema.links)
+  await db.delete(schema.subcategories)
+  await db.delete(schema.categories)
+  await db.delete(schema.masterCategories)
   console.log("Dados existentes limpos.")
 
-  // Master Categories
-  const masterCategoryDigitalId = generateUniqueId()
-  const masterCategoryFisicoId = generateUniqueId()
+  // Criar Master Categories
+  const masterCategoryDigital = await db
+    .insert(schema.masterCategories)
+    .values({ name: "Digital", slug: "digital" })
+    .returning()
+  const masterCategoryPhysical = await db
+    .insert(schema.masterCategories)
+    .values({ name: "Físico", slug: "fisico" })
+    .returning()
+  console.log("Master Categories criadas.")
 
-  await db.insert(masterCategories).values([
-    { id: masterCategoryDigitalId, name: "Digital", slug: "digital" },
-    { id: masterCategoryFisicoId, name: "Físico", slug: "fisico" },
-  ])
-  console.log("Categorias Master criadas.")
-
-  // Categories
-  const categoryEbooksId = generateUniqueId()
-  const categoryCursosId = generateUniqueId()
-  const categoryProdutosCasaId = generateUniqueId()
-  const categoryEletronicosId = generateUniqueId()
-  const categorySuplementosId = generateUniqueId()
-  const categoryLivrosFisicosId = generateUniqueId()
-  const categoryJogosVideogameId = generateUniqueId()
-  const categoryPerfumesId = generateUniqueId()
-
-  await db.insert(categories).values([
-    { id: categoryEbooksId, name: "Ebooks", slug: "ebooks", masterCategoryId: masterCategoryDigitalId },
-    { id: categoryCursosId, name: "Cursos Online", slug: "cursos-online", masterCategoryId: masterCategoryDigitalId },
-    {
-      id: categoryProdutosCasaId,
+  // Criar Categories
+  const categoryEbooks = await db
+    .insert(schema.categories)
+    .values({
+      name: "Ebooks",
+      slug: "ebooks",
+      masterCategoryId: masterCategoryDigital[0].id,
+    })
+    .returning()
+  const categorySoftware = await db
+    .insert(schema.categories)
+    .values({
+      name: "Software",
+      slug: "software",
+      masterCategoryId: masterCategoryDigital[0].id,
+    })
+    .returning()
+  const categoryProdutosCasa = await db
+    .insert(schema.categories)
+    .values({
       name: "Produtos para Casa",
       slug: "produtos-casa",
-      masterCategoryId: masterCategoryFisicoId,
-    },
-    { id: categoryEletronicosId, name: "Eletrônicos", slug: "eletronicos", masterCategoryId: masterCategoryFisicoId },
-    { id: categorySuplementosId, name: "Suplementos", slug: "suplementos", masterCategoryId: masterCategoryFisicoId },
-    {
-      id: categoryLivrosFisicosId,
-      name: "Livros Físicos",
-      slug: "livros-fisicos",
-      masterCategoryId: masterCategoryFisicoId,
-    },
-    {
-      id: categoryJogosVideogameId,
-      name: "Jogos e Videogame",
-      slug: "jogos-videogame",
-      masterCategoryId: masterCategoryFisicoId,
-    },
-    { id: categoryPerfumesId, name: "Perfumes", slug: "perfumes", masterCategoryId: masterCategoryFisicoId },
-  ])
-  console.log("Categorias criadas.")
+      masterCategoryId: masterCategoryPhysical[0].id,
+    })
+    .returning()
+  const categoryEletronicos = await db
+    .insert(schema.categories)
+    .values({
+      name: "Eletrônicos",
+      slug: "eletronicos",
+      masterCategoryId: masterCategoryPhysical[0].id,
+    })
+    .returning()
+  console.log("Categories criadas.")
 
-  // Subcategories
-  const subcategoryNutricaoId = generateUniqueId()
-  const subcategoryFinancasId = generateUniqueId()
-  const subcategoryMarketingId = generateUniqueId()
-  const subcategoryCulinariaId = generateUniqueId()
-  const subcategoryDecoracaoId = generateUniqueId()
-  const subcategoryLimpezaId = generateUniqueId()
-  const subcategorySmartphonesId = generateUniqueId()
-  const subcategoryNotebooksId = generateUniqueId()
-  const subcategoryWheyId = generateUniqueId()
-  const subcategoryCreatinaId = generateUniqueId()
-  const subcategoryFiccaoId = generateUniqueId()
-  const subcategoryNaoFiccaoId = generateUniqueId()
-  const subcategoryPS5Id = generateUniqueId()
-  const subcategoryXboxId = generateUniqueId()
-  const subcategoryMasculinoId = generateUniqueId()
-  const subcategoryFemininoId = generateUniqueId()
+  // Criar Subcategories
+  const subcategoryNutricao = await db
+    .insert(schema.subcategories)
+    .values({
+      name: "Nutrição",
+      slug: "nutricao",
+      categoryId: categoryEbooks[0].id,
+      bitlyUrl: "https://bit.ly/ebook-nutricao-v0", // Exemplo de Bitly link
+    })
+    .returning()
+  const subcategoryFinancas = await db
+    .insert(schema.subcategories)
+    .values({
+      name: "Finanças Pessoais",
+      slug: "financas-pessoais",
+      categoryId: categoryEbooks[0].id,
+      bitlyUrl: "https://bit.ly/ebook-financas-v0", // Exemplo de Bitly link
+    })
+    .returning()
+  const subcategoryProdutividade = await db
+    .insert(schema.subcategories)
+    .values({
+      name: "Produtividade",
+      slug: "produtividade",
+      categoryId: categorySoftware[0].id,
+    })
+    .returning()
+  const subcategoryLimpeza = await db
+    .insert(schema.subcategories)
+    .values({
+      name: "Limpeza",
+      slug: "limpeza",
+      categoryId: categoryProdutosCasa[0].id,
+    })
+    .returning()
+  const subcategorySmartphones = await db
+    .insert(schema.subcategories)
+    .values({
+      name: "Smartphones",
+      slug: "smartphones",
+      categoryId: categoryEletronicos[0].id,
+    })
+    .returning()
+  console.log("Subcategories criadas.")
 
-  await db.insert(subcategories).values([
-    { id: subcategoryNutricaoId, name: "Nutrição", slug: "nutricao", categoryId: categoryEbooksId },
-    { id: subcategoryFinancasId, name: "Finanças Pessoais", slug: "financas-pessoais", categoryId: categoryEbooksId },
-    { id: subcategoryMarketingId, name: "Marketing Digital", slug: "marketing-digital", categoryId: categoryCursosId },
-    { id: subcategoryCulinariaId, name: "Culinária", slug: "culinaria", categoryId: categoryCursosId },
-    { id: subcategoryDecoracaoId, name: "Decoração", slug: "decoracao", categoryId: categoryProdutosCasaId },
-    { id: subcategoryLimpezaId, name: "Limpeza", slug: "limpeza", categoryId: categoryProdutosCasaId },
-    { id: subcategorySmartphonesId, name: "Smartphones", slug: "smartphones", categoryId: categoryEletronicosId },
-    { id: subcategoryNotebooksId, name: "Notebooks", slug: "notebooks", categoryId: categoryEletronicosId },
-    { id: subcategoryWheyId, name: "Whey Protein", slug: "whey-protein", categoryId: categorySuplementosId },
-    { id: subcategoryCreatinaId, name: "Creatina", slug: "creatina", categoryId: categorySuplementosId },
-    { id: subcategoryFiccaoId, name: "Ficção", slug: "ficcao", categoryId: categoryLivrosFisicosId },
-    { id: subcategoryNaoFiccaoId, name: "Não Ficção", slug: "nao-ficcao", categoryId: categoryLivrosFisicosId },
-    { id: subcategoryPS5Id, name: "PlayStation 5", slug: "ps5", categoryId: categoryJogosVideogameId },
-    { id: subcategoryXboxId, name: "Xbox Series X", slug: "xbox-series-x", categoryId: categoryJogosVideogameId },
-    { id: subcategoryMasculinoId, name: "Masculino", slug: "masculino", categoryId: categoryPerfumesId },
-    { id: subcategoryFemininoId, name: "Feminino", slug: "feminino", categoryId: categoryPerfumesId },
-  ])
-  console.log("Subcategorias criadas.")
+  // Lista de links famosos para usar como redirects
+  const famousLinks = [
+    "https://google.com",
+    "https://facebook.com",
+    "https://x.com",
+    "https://wikipedia.org",
+    "https://reddit.com",
+    "https://youtube.com",
+    "https://instagram.com",
+    "https://twitter.com",
+    "https://github.com",
+    "https://linkedin.com",
+    "https://amazon.com",
+    "https://netflix.com",
+    "https://apple.com",
+    "https://microsoft.com",
+    "https://stackoverflow.com"
+  ]
 
-  // Links
-  await db.insert(links).values([
-    { url: "https://amzn.to/ebook-nutricao-1", subcategoryId: subcategoryNutricaoId, clicks: 15 },
-    { url: "https://amzn.to/ebook-nutricao-2", subcategoryId: subcategoryNutricaoId, clicks: 22 },
-    { url: "https://amzn.to/ebook-nutricao-3", subcategoryId: subcategoryNutricaoId, clicks: 8 },
-    { url: "https://amzn.to/ebook-financas-1", subcategoryId: subcategoryFinancasId, clicks: 30 },
-    { url: "https://amzn.to/ebook-financas-2", subcategoryId: subcategoryFinancasId, clicks: 12 },
-    { url: "https://amzn.to/curso-marketing-1", subcategoryId: subcategoryMarketingId, clicks: 45 },
-    { url: "https://amzn.to/curso-marketing-2", subcategoryId: subcategoryMarketingId, clicks: 18 },
-    { url: "https://amzn.to/curso-culinaria-1", subcategoryId: subcategoryCulinariaId, clicks: 25 },
-    { url: "https://amzn.to/decoracao-item-1", subcategoryId: subcategoryDecoracaoId, clicks: 10 },
-    { url: "https://amzn.to/limpeza-produto-1", subcategoryId: subcategoryLimpezaId, clicks: 5 },
-    { url: "https://amzn.to/smartphone-modelo-a", subcategoryId: subcategorySmartphonesId, clicks: 50 },
-    { url: "https://amzn.to/smartphone-modelo-b", subcategoryId: subcategorySmartphonesId, clicks: 35 },
-    { url: "https://amzn.to/notebook-gamer", subcategoryId: subcategoryNotebooksId, clicks: 28 },
-    { url: "https://amzn.to/whey-protein-marca-x", subcategoryId: subcategoryWheyId, clicks: 60 },
-    { url: "https://amzn.to/creatina-marca-y", subcategoryId: subcategoryCreatinaId, clicks: 40 },
-    { url: "https://amzn.to/livro-ficcao-a", subcategoryId: subcategoryFiccaoId, clicks: 17 },
-    { url: "https://amzn.to/livro-nao-ficcao-b", subcategoryId: subcategoryNaoFiccaoId, clicks: 20 },
-    { url: "https://amzn.to/ps5-console", subcategoryId: subcategoryPS5Id, clicks: 70 },
-    { url: "https://amzn.to/xbox-series-x-console", subcategoryId: subcategoryXboxId, clicks: 55 },
-    { url: "https://amzn.to/perfume-masculino-1", subcategoryId: subcategoryMasculinoId, clicks: 14 },
-    { url: "https://amzn.to/perfume-feminino-1", subcategoryId: subcategoryFemininoId, clicks: 9 },
-    { url: "https://amzn.to/ebook-nutricao-4", subcategoryId: subcategoryNutricaoId, clicks: 10 },
-    { url: "https://amzn.to/ebook-nutricao-5", subcategoryId: subcategoryNutricaoId, clicks: 18 },
-    { url: "https://amzn.to/ebook-financas-3", subcategoryId: subcategoryFinancasId, clicks: 25 },
-    { url: "https://amzn.to/curso-marketing-3", subcategoryId: subcategoryMarketingId, clicks: 30 },
-    { url: "https://amzn.to/decoracao-item-2", subcategoryId: subcategoryDecoracaoId, clicks: 7 },
-    { url: "https://amzn.to/smartphone-modelo-c", subcategoryId: subcategorySmartphonesId, clicks: 42 },
-    { url: "https://amzn.to/whey-protein-marca-y", subcategoryId: subcategoryWheyId, clicks: 50 },
-    { url: "https://amzn.to/livro-ficcao-c", subcategoryId: subcategoryFiccaoId, clicks: 11 },
-    { url: "https://amzn.to/ps5-jogo-a", subcategoryId: subcategoryPS5Id, clicks: 33 },
-  ])
+  // Função para pegar links aleatórios
+  function getRandomLinks(min: number, max: number): string[] {
+    const count = Math.floor(Math.random() * (max - min + 1)) + min
+    const shuffled = [...famousLinks].sort(() => 0.5 - Math.random())
+    return shuffled.slice(0, count)
+  }
+
+  // Criar Links para Nutrição (4 links)
+  const nutricaoLinks = getRandomLinks(3, 5)
+  for (const [index, url] of nutricaoLinks.entries()) {
+    await db.insert(schema.links).values({
+      url,
+      subcategoryId: subcategoryNutricao[0].id,
+      clicks: Math.floor(Math.random() * 50) + 1,
+    })
+  }
+
+  // Criar Links para Finanças (3 links)
+  const financasLinks = getRandomLinks(3, 4)
+  for (const [index, url] of financasLinks.entries()) {
+    await db.insert(schema.links).values({
+      url,
+      subcategoryId: subcategoryFinancas[0].id,
+      clicks: Math.floor(Math.random() * 30) + 1,
+    })
+  }
+
+  // Criar Links para Produtividade (5 links)
+  const produtividadeLinks = getRandomLinks(4, 6)
+  for (const [index, url] of produtividadeLinks.entries()) {
+    await db.insert(schema.links).values({
+      url,
+      subcategoryId: subcategoryProdutividade[0].id,
+      clicks: Math.floor(Math.random() * 40) + 1,
+    })
+  }
+
+  // Criar Links para Limpeza (3 links)
+  const limpezaLinks = getRandomLinks(3, 4)
+  for (const [index, url] of limpezaLinks.entries()) {
+    await db.insert(schema.links).values({
+      url,
+      subcategoryId: subcategoryLimpeza[0].id,
+      clicks: Math.floor(Math.random() * 25) + 1,
+    })
+  }
+
+  // Criar Links para Smartphones (8 links)
+  const smartphonesLinks = getRandomLinks(7, 10)
+  for (const [index, url] of smartphonesLinks.entries()) {
+    await db.insert(schema.links).values({
+      url,
+      subcategoryId: subcategorySmartphones[0].id,
+      clicks: Math.floor(Math.random() * 60) + 1,
+    })
+  }
+
   console.log("Links criados.")
-
   console.log("Seed do banco de dados concluído!")
 }
 
 seed().catch((err) => {
-  console.error("Erro durante o seed do banco de dados:", err)
+  console.error("Erro durante o seed:", err)
   process.exit(1)
 })

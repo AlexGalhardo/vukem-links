@@ -4,7 +4,7 @@ import { db } from "@/lib/db"
 import { masterCategories, categories, subcategories, links } from "@/db/schema"
 import { eq, sql, gte } from "drizzle-orm"
 
-// --- Interfaces para tipagem (podem ser movidas para um arquivo de tipos se o projeto crescer) ---
+// --- Interfaces para tipagem ---
 interface MasterCategory {
   id: string
   name: string
@@ -29,6 +29,7 @@ interface Subcategory {
   name: string
   slug: string
   categoryId: string
+  bitlyUrl?: string | null // Adicionado bitlyUrl
   createdAt: Date
   _count?: {
     links: number
@@ -40,7 +41,7 @@ interface Link {
   id: string
   url: string
   clicks: number
-  subcategoryId: string // Adicionado subcategoryId para consistência
+  subcategoryId: string
   createdAt: Date
   subcategory?: {
     name: string
@@ -224,4 +225,13 @@ export async function updateLink(id: string, newUrl: string) {
 
 export async function deleteLink(id: string) {
   await db.delete(links).where(eq(links.id, id))
+}
+
+export async function updateSubcategoryBitlyUrl(id: string, bitlyUrl: string | null) {
+  const result = await db.update(subcategories).set({ bitlyUrl }).where(eq(subcategories.id, id)).returning()
+  return result[0]
+}
+
+export async function deleteSubcategoryBitlyUrl(id: string) {
+  await db.update(subcategories).set({ bitlyUrl: null }).where(eq(subcategories.id, id))
 }

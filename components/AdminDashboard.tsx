@@ -48,9 +48,11 @@ import {
   getTotalRedirects,
   getRedirectsLast7Days,
   getRedirectsLast30Days,
-  updateLink, // Importar updateLink
-  deleteLink, // Importar deleteLink
-} from "@/app/actions" // Importar das actions
+  updateLink,
+  deleteLink,
+  updateSubcategoryBitlyUrl, // Importar nova ação
+  deleteSubcategoryBitlyUrl, // Importar nova ação
+} from "@/app/actions"
 
 interface MasterCategory {
   id: string
@@ -76,6 +78,7 @@ interface Subcategory {
   name: string
   slug: string
   categoryId: string
+  bitlyUrl?: string | null // Adicionado bitlyUrl
   createdAt: Date
   _count?: {
     links: number
@@ -87,7 +90,7 @@ interface Link {
   id: string
   url: string
   clicks: number
-  subcategoryId: string // Adicionado subcategoryId para consistência
+  subcategoryId: string
   createdAt: Date
   subcategory?: {
     name: string
@@ -130,6 +133,8 @@ export default function AdminDashboard() {
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isBitlyEditDialogOpen, setIsBitlyEditDialogOpen] = useState(false) // Novo
+  const [isBitlyDeleteDialogOpen, setIsBitlyDeleteDialogOpen] = useState(false) // Novo
 
   // Form states
   const [newMasterCategory, setNewMasterCategory] = useState({ name: "", slug: "" })
@@ -138,6 +143,8 @@ export default function AdminDashboard() {
   const [newLink, setNewLink] = useState({ url: "", subcategoryId: "" })
   const [selectedLink, setSelectedLink] = useState<Link | null>(null)
   const [editedLinkUrl, setEditedLinkUrl] = useState("")
+  const [selectedSubcategoryForBitly, setSelectedSubcategoryForBitly] = useState<Subcategory | null>(null) // Novo
+  const [editedBitlyUrl, setEditedBitlyUrl] = useState("") // Novo
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -301,6 +308,45 @@ export default function AdminDashboard() {
     }
   }
 
+  // Bitly Link Handlers
+  const handleEditBitlyClick = (subcategory: Subcategory) => {
+    setSelectedSubcategoryForBitly(subcategory)
+    setEditedBitlyUrl(subcategory.bitlyUrl || "")
+    setIsBitlyEditDialogOpen(true)
+  }
+
+  const handleDeleteBitlyClick = (subcategory: Subcategory) => {
+    setSelectedSubcategoryForBitly(subcategory)
+    setIsBitlyDeleteDialogOpen(true)
+  }
+
+  const confirmEditBitlyLink = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (selectedSubcategoryForBitly) {
+      try {
+        await updateSubcategoryBitlyUrl(selectedSubcategoryForBitly.id, editedBitlyUrl)
+        toast({ title: "Sucesso", description: "Link Bitly atualizado com sucesso!" })
+        setIsBitlyEditDialogOpen(false)
+        fetchData()
+      } catch (error) {
+        toast({ title: "Erro", description: "Erro ao atualizar link Bitly", variant: "destructive" })
+      }
+    }
+  }
+
+  const confirmDeleteBitlyLink = async () => {
+    if (selectedSubcategoryForBitly) {
+      try {
+        await deleteSubcategoryBitlyUrl(selectedSubcategoryForBitly.id)
+        toast({ title: "Sucesso", description: "Link Bitly excluído com sucesso!" })
+        setIsBitlyDeleteDialogOpen(false)
+        fetchData()
+      } catch (error) {
+        toast({ title: "Erro", description: "Erro ao excluir link Bitly", variant: "destructive" })
+      }
+    }
+  }
+
   const getFullRedirectLink = (subcategoryId: string) => {
     return `${window.location.origin}/link?id=${subcategoryId}`
   }
@@ -330,6 +376,10 @@ export default function AdminDashboard() {
         onCreateLink={() => setIsLinkDialogOpen(true)}
       />
       <div className="flex-1 flex flex-col overflow-hidden md:ml-0">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-background">
+          <h1 className="text-xl font-bold">Visão Geral</h1>
+        </header>
+
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 md:p-6">
           <div className="space-y-6">
             <div>
@@ -469,7 +519,7 @@ export default function AdminDashboard() {
                                             <Input
                                               readOnly
                                               value={getFullRedirectLink(subcategory.id)}
-                                              className="flex-1 bg-blue-100 border-blue-400 text-blue-800 dark:bg-gray-950 dark:border-blue-700 dark:text-white"
+                                              className="flex-1 bg-blue-100 border-blue-400 text-blue-800 dark:bg-blue-950 dark:border-blue-700 dark:text-blue-200"
                                             />
                                             <Button
                                               variant="outline"
@@ -479,9 +529,70 @@ export default function AdminDashboard() {
                                               <Copy className="h-4 w-4" />
                                             </Button>
                                           </div>
-                                          <p className="text-xs text-blue-600 dark:text-white">
+                                          <p className="text-xs text-blue-600 dark:text-blue-300">
                                             Copie este link, encurte-o no Bitly e use-o na internet. Ele fará um
                                             redirecionamento aleatório para um dos links acima.
+                                          </p>
+                                        </div>
+
+                                        {/* Novo input para o link Bitly personalizado */}
+                                        <div className="mt-4 p-3 border border-purple-300 bg-purple-50/50 rounded-md flex flex-col gap-2">
+                                          <p className="text-sm font-semibold text-purple-700 dark:text-white">
+                                            Seu Link Bitly Personalizado (Opcional):
+                                          </p>
+                                          <div className="flex items-center gap-2">
+                                            <Input
+                                              value={subcategory.bitlyUrl || ""}
+                                              onChange={(e) => {
+                                                // Atualiza o estado local da subcategoria para refletir a mudança
+                                                setSubcategories((prev) =>
+                                                  prev.map((s) =>
+                                                    s.id === subcategory.id ? { ...s, bitlyUrl: e.target.value } : s,
+                                                  ),
+                                                )
+                                              }}
+                                              placeholder="https://bit.ly/seu-link-personalizado"
+                                              className="flex-1 bg-purple-100 border-purple-400 text-purple-800 dark:bg-purple-950 dark:border-purple-700 dark:text-purple-200"
+                                            />
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() =>
+                                                subcategory.bitlyUrl && copyToClipboard(subcategory.bitlyUrl)
+                                              }
+                                              disabled={!subcategory.bitlyUrl}
+                                            >
+                                              <Copy className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() =>
+                                                subcategory.bitlyUrl && window.open(subcategory.bitlyUrl, "_blank")
+                                              }
+                                              disabled={!subcategory.bitlyUrl}
+                                            >
+                                              <ExternalLink className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => handleEditBitlyClick(subcategory)}
+                                            >
+                                              <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => handleDeleteBitlyClick(subcategory)}
+                                              disabled={!subcategory.bitlyUrl}
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                          <p className="text-xs text-purple-600 dark:text-purple-300">
+                                            Use este campo para salvar e gerenciar o link encurtado do Bitly que você
+                                            criou para a URL final desta subcategoria.
                                           </p>
                                         </div>
                                       </AccordionContent>
@@ -501,8 +612,6 @@ export default function AdminDashboard() {
 
             {/* Summary Tables */}
             <div className="grid gap-4 grid-cols-1">
-              {" "}
-              {/* Alterado para grid-cols-1 */}
               <Card>
                 <CardHeader>
                   <CardTitle>Links Mais Clicados</CardTitle>
@@ -848,6 +957,58 @@ export default function AdminDashboard() {
             </Button>
             <Button type="button" variant="destructive" onClick={confirmDeleteLink}>
               Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Bitly Link Dialog (Novo) */}
+      <Dialog open={isBitlyEditDialogOpen} onOpenChange={setIsBitlyEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Link Bitly Personalizado</DialogTitle>
+            <DialogDescription>
+              Atualize o link Bitly para a subcategoria:{" "}
+              <span className="font-semibold">{selectedSubcategoryForBitly?.name}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={confirmEditBitlyLink} className="space-y-4">
+            <div>
+              <Label htmlFor="editBitlyUrl">Novo Link Bitly</Label>
+              <Input
+                id="editBitlyUrl"
+                type="url"
+                value={editedBitlyUrl}
+                onChange={(e) => setEditedBitlyUrl(e.target.value)}
+                placeholder="https://bit.ly/seu-novo-link"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsBitlyEditDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">Salvar Link Bitly</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Bitly Link Dialog (Novo) */}
+      <Dialog open={isBitlyDeleteDialogOpen} onOpenChange={setIsBitlyDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão do Link Bitly</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover o link Bitly personalizado para a subcategoria:{" "}
+              <span className="font-semibold">{selectedSubcategoryForBitly?.name}</span>?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsBitlyDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmDeleteBitlyLink}>
+              Remover Link Bitly
             </Button>
           </DialogFooter>
         </DialogContent>
