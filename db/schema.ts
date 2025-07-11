@@ -39,6 +39,7 @@ export const subcategories = sqliteTable("subcategories", {
   categoryId: text("category_id")
     .notNull()
     .references(() => categories.id, { onDelete: "cascade" }),
+  bitlyUrl: text("bitly_url"), // Novo campo para o link Bitly
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
 })
 
