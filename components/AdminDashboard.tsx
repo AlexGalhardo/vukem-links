@@ -8,7 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { AdminSidebar } from "./AdminSidebar"
@@ -24,6 +31,10 @@ import {
   Copy,
   ExternalLink,
   RefreshCcw,
+  Edit,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import {
   createCategory,
@@ -37,6 +48,8 @@ import {
   getTotalRedirects,
   getRedirectsLast7Days,
   getRedirectsLast30Days,
+  updateLink, // Importar updateLink
+  deleteLink, // Importar deleteLink
 } from "@/app/actions" // Importar das actions
 
 interface MasterCategory {
@@ -74,6 +87,8 @@ interface Link {
   id: string
   url: string
   clicks: number
+  subcategoryId: string // Adicionado subcategoryId para consistência
+  createdAt: Date
   subcategory?: {
     name: string
     slug: string
@@ -113,12 +128,20 @@ export default function AdminDashboard() {
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
   const [isSubcategoryDialogOpen, setIsSubcategoryDialogOpen] = useState(false)
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   // Form states
   const [newMasterCategory, setNewMasterCategory] = useState({ name: "", slug: "" })
   const [newCategory, setNewCategory] = useState({ name: "", slug: "", masterCategoryId: "" })
   const [newSubcategory, setNewSubcategory] = useState({ name: "", slug: "", categoryId: "" })
   const [newLink, setNewLink] = useState({ url: "", subcategoryId: "" })
+  const [selectedLink, setSelectedLink] = useState<Link | null>(null)
+  const [editedLinkUrl, setEditedLinkUrl] = useState("")
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const linksPerPage = 10
 
   const { toast } = useToast()
 
@@ -240,9 +263,55 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleEditClick = (link: Link) => {
+    setSelectedLink(link)
+    setEditedLinkUrl(link.url)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleDeleteClick = (link: Link) => {
+    setSelectedLink(link)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmEditLink = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (selectedLink && editedLinkUrl) {
+      try {
+        await updateLink(selectedLink.id, editedLinkUrl)
+        toast({ title: "Sucesso", description: "Link atualizado com sucesso!" })
+        setIsEditDialogOpen(false)
+        fetchData()
+      } catch (error) {
+        toast({ title: "Erro", description: "Erro ao atualizar link", variant: "destructive" })
+      }
+    }
+  }
+
+  const confirmDeleteLink = async () => {
+    if (selectedLink) {
+      try {
+        await deleteLink(selectedLink.id)
+        toast({ title: "Sucesso", description: "Link excluído com sucesso!" })
+        setIsDeleteDialogOpen(false)
+        fetchData()
+      } catch (error) {
+        toast({ title: "Erro", description: "Erro ao excluir link", variant: "destructive" })
+      }
+    }
+  }
+
   const getFullRedirectLink = (subcategoryId: string) => {
     return `${window.location.origin}/link?id=${subcategoryId}`
   }
+
+  // Pagination logic
+  const indexOfLastLink = currentPage * linksPerPage
+  const indexOfFirstLink = indexOfLastLink - linksPerPage
+  const currentLinks = links.slice(indexOfFirstLink, indexOfLastLink)
+  const totalPages = Math.ceil(links.length / linksPerPage)
+
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
 
   if (isLoading) {
     return (
@@ -375,18 +444,32 @@ export default function AdminDashboard() {
                                                 >
                                                   <ExternalLink className="h-3 w-3" />
                                                 </Button>
+                                                <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  onClick={() => handleEditClick(link)}
+                                                >
+                                                  <Edit className="h-3 w-3" />
+                                                </Button>
+                                                <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  onClick={() => handleDeleteClick(link)}
+                                                >
+                                                  <Trash2 className="h-3 w-3" />
+                                                </Button>
                                               </div>
                                             </div>
                                           ))}
                                         <div className="mt-4 p-3 border border-blue-300 bg-blue-50/50 rounded-md flex flex-col gap-2">
-                                          <p className="text-sm font-semibold text-blue-700">
+                                          <p className="text-sm font-semibold text-blue-700 dark:text-white">
                                             Link Final da Subcategoria (para encurtar no Bitly):
                                           </p>
                                           <div className="flex items-center gap-2">
                                             <Input
                                               readOnly
                                               value={getFullRedirectLink(subcategory.id)}
-                                              className="flex-1 bg-blue-100 border-blue-400 text-blue-800"
+                                              className="flex-1 bg-blue-100 border-blue-400 text-blue-800 dark:bg-gray-950 dark:border-blue-700 dark:text-white"
                                             />
                                             <Button
                                               variant="outline"
@@ -396,7 +479,7 @@ export default function AdminDashboard() {
                                               <Copy className="h-4 w-4" />
                                             </Button>
                                           </div>
-                                          <p className="text-xs text-blue-600">
+                                          <p className="text-xs text-blue-600 dark:text-white">
                                             Copie este link, encurte-o no Bitly e use-o na internet. Ele fará um
                                             redirecionamento aleatório para um dos links acima.
                                           </p>
@@ -417,11 +500,13 @@ export default function AdminDashboard() {
             </Card>
 
             {/* Summary Tables */}
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1">
+              {" "}
+              {/* Alterado para grid-cols-1 */}
               <Card>
                 <CardHeader>
                   <CardTitle>Links Mais Clicados</CardTitle>
-                  <CardDescription>Top 10 links por número de cliques</CardDescription>
+                  <CardDescription>Top links por número de cliques (paginado)</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -430,12 +515,12 @@ export default function AdminDashboard() {
                         <TableHead>URL</TableHead>
                         <TableHead>Categoria</TableHead>
                         <TableHead>Cliques</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {links
-                        .sort((a, b) => b.clicks - a.clicks)
-                        .slice(0, 10)
+                      {currentLinks
+                        .sort((a, b) => b.clicks - a.clicks) // Mantém a ordenação
                         .map((link) => (
                           <TableRow key={link.id}>
                             <TableCell className="max-w-xs truncate">{link.url}</TableCell>
@@ -444,47 +529,67 @@ export default function AdminDashboard() {
                               {link.subcategory?.name}
                             </TableCell>
                             <TableCell>{link.clicks}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(link.url)}
+                                  title="Copiar URL do Link"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(link.url, "_blank")}
+                                  title="Abrir Link"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditClick(link)}
+                                  title="Editar Link"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteClick(link)}
+                                  title="Excluir Link"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
                         ))}
                     </TableBody>
                   </Table>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Resumo por Master Categoria</CardTitle>
-                  <CardDescription>Visão geral da estrutura hierárquica</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Master Categoria</TableHead>
-                        <TableHead>Categorias</TableHead>
-                        <TableHead>Total Links</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {masterCategories.map((masterCategory) => (
-                        <TableRow key={masterCategory.id}>
-                          <TableCell className="font-medium">{masterCategory.name}</TableCell>
-                          <TableCell>{masterCategory.categories?.length}</TableCell>
-                          <TableCell>
-                            {masterCategory.categories?.reduce(
-                              (total, cat) =>
-                                total +
-                                  cat?.subcategories?.reduce(
-                                    (subTotal, sub) => subTotal + (sub._count?.links || 0),
-                                    0,
-                                  ) || 0,
-                              0,
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <div className="flex justify-center items-center gap-4 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => paginate(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" /> Anterior
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => paginate(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Próxima <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -696,6 +801,55 @@ export default function AdminDashboard() {
               Adicionar Link
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Link Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Link</DialogTitle>
+            <DialogDescription>Atualize a URL do link selecionado.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={confirmEditLink} className="space-y-4">
+            <div>
+              <Label htmlFor="editLinkUrl">Nova URL do Link</Label>
+              <Input
+                id="editLinkUrl"
+                type="url"
+                value={editedLinkUrl}
+                onChange={(e) => setEditedLinkUrl(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">Confirmar Edição</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Link Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir o link: <span className="font-semibold">{selectedLink?.url}</span>? Esta
+              ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmDeleteLink}>
+              Excluir
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

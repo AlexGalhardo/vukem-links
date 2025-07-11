@@ -39,8 +39,8 @@ interface Subcategory {
 interface Link {
   id: string
   url: string
-  subcategoryId: string
   clicks: number
+  subcategoryId: string // Adicionado subcategoryId para consistência
   createdAt: Date
   subcategory?: {
     name: string
@@ -215,4 +215,13 @@ export async function incrementLinkClicks(linkId: string) {
     .update(links)
     .set({ clicks: sql`${links.clicks} + 1` })
     .where(eq(links.id, linkId))
+}
+
+export async function updateLink(id: string, newUrl: string) {
+  const result = await db.update(links).set({ url: newUrl }).where(eq(links.id, id)).returning()
+  return result[0]
+}
+
+export async function deleteLink(id: string) {
+  await db.delete(links).where(eq(links.id, id))
 }
