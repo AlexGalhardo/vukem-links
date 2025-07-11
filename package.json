@@ -4,9 +4,18 @@
     "build": "next build",
     "dev": "next dev --turbo",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "linter": "biome check app/ components/ hooks/ lib/ db/ scripts/ --fix --unsafe",
+    "format": "biome format app/ components/ hooks/ lib/ db/ scripts/ --fix "
+  },
+  "lint-staged": {
+    "*.{js,ts,cjs,mjs,d.cts,d.mts,json,jsonc}": [
+      "biome check --apply --no-errors-on-unmatched"
+    ]
   },
   "dependencies": {
+    "@biomejs/biome": "1.9.4",
+    "husky": "^9.1.7",
     "@aws-sdk/client-rds-data": "latest",
     "@cloudflare/workers-types": "latest",
     "@electric-sql/pglite": "latest",

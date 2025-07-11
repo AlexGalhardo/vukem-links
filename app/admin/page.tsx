@@ -1,18 +1,18 @@
-import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
-import AdminDashboard from "@/components/AdminDashboard"
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import AdminDashboard from "@/components/AdminDashboard";
 
 async function checkAuth() {
-  const cookieStore = await cookies()
-  const auth = cookieStore.get("auth")
+	const cookieStore = await cookies();
+	const auth = cookieStore.get("auth");
 
-  if (!auth || auth.value !== "authenticated") {
-    redirect("/login")
-  }
+	if (!auth || auth.value !== "authenticated") {
+		redirect("/login");
+	}
 }
 
 export default async function AdminPage() {
-  await checkAuth()
+	await checkAuth();
 
-  return <AdminDashboard />
+	return <AdminDashboard />;
 }

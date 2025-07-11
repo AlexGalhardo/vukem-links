@@ -12,23 +12,23 @@
  */
 
 function deprecated(name: string): never {
-  throw new Error(
-    `Função "${name}" foi descontinuada. ` + `Use as Server Actions (app/actions.ts) em vez de "@/lib/database".`,
-  )
+	throw new Error(
+		`Função "${name}" foi descontinuada. ` + `Use as Server Actions (app/actions.ts) em vez de "@/lib/database".`,
+	);
 }
 
 /* --- GETs ---------------------------------------------------------------- */
 
-export const getCategories = () => deprecated("getCategories")
-export const getLinks = () => deprecated("getLinks")
-export const getLinksBySubcategory = () => deprecated("getLinksBySubcategory")
-export const getMasterCategories = () => deprecated("getMasterCategories")
-export const getSubcategories = () => deprecated("getSubcategories")
-export const getTotalRedirects = () => deprecated("getTotalRedirects")
+export const getCategories = () => deprecated("getCategories");
+export const getLinks = () => deprecated("getLinks");
+export const getLinksBySubcategory = () => deprecated("getLinksBySubcategory");
+export const getMasterCategories = () => deprecated("getMasterCategories");
+export const getSubcategories = () => deprecated("getSubcategories");
+export const getTotalRedirects = () => deprecated("getTotalRedirects");
 
 /* --- POSTs / MUTATIONS ---------------------------------------------------- */
 
-export const createCategory = () => deprecated("createCategory")
-export const createLink = () => deprecated("createLink")
-export const createMasterCategory = () => deprecated("createMasterCategory")
-export const createSubcategory = () => deprecated("createSubcategory")
+export const createCategory = () => deprecated("createCategory");
+export const createLink = () => deprecated("createLink");
+export const createMasterCategory = () => deprecated("createMasterCategory");
+export const createSubcategory = () => deprecated("createSubcategory");

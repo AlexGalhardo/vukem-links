@@ -55,4 +55,4 @@ model Link {
   clicks      Int      @default(0)
   createdAt   DateTime @default(now())
 }
-`
+`;
