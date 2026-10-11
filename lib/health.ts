@@ -30,6 +30,12 @@ async function probe(url: string): Promise<Probe> {
 	}
 }
 
+/** A project only receives links while its site answers: any response below 500 proves DNS and server are up. */
+export async function isSiteLive(baseUrl: string): Promise<boolean> {
+	const { statusCode } = await probe(baseUrl);
+	return statusCode !== undefined && statusCode < 500;
+}
+
 export interface CheckSummary {
 	checked: number;
 	ok: number;

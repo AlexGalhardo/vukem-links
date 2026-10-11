@@ -7,6 +7,7 @@ import {
 	nextHealth,
 	parseImport,
 	pickLink,
+	productInput,
 	toDevice,
 } from "./links";
 
@@ -24,6 +25,28 @@ describe("pickLink", () => {
 	test("undefined when every link is dead", () => {
 		expect(pickLink([{ status: "dead" as const, priority: 0 }])).toBeUndefined();
 		expect(pickLink([])).toBeUndefined();
+	});
+	test("prefers the requested store, falling back to the priority order", () => {
+		const links = [
+			{ id: "ml", status: "alive" as const, priority: 0, store: "mercadolivre" },
+			{ id: "amz-dead", status: "dead" as const, priority: 1, store: "amazon" },
+			{ id: "amz", status: "unknown" as const, priority: 2, store: "amazon" },
+			{ id: "shopee-dead", status: "dead" as const, priority: 3, store: "shopee" },
+		];
+		expect(pickLink(links, "amazon")?.id).toBe("amz");
+		expect(pickLink(links, "shopee")?.id).toBe("ml");
+		expect(pickLink(links, "nope")?.id).toBe("ml");
+		expect(pickLink(links, "")?.id).toBe("ml");
+	});
+});
+
+describe("productInput", () => {
+	test("refuses a product without links", () => {
+		expect(productInput.safeParse({ externalId: "https://a.example.com/p", links: [] }).success).toBe(false);
+		expect(productInput.safeParse({ externalId: "https://a.example.com/p" }).success).toBe(false);
+		expect(
+			productInput.safeParse({ externalId: "https://a.example.com/p", links: [{ url: URL_ML }] }).success,
+		).toBe(true);
 	});
 });
 

@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import {
 	type AffiliateLink,
@@ -106,6 +106,73 @@ export async function upsertProducts(project: Project, inputs: ProductInput[]): 
 	for (const batch of chunks(newLinks)) await db.insert(affiliateLinks).values(batch);
 	summary.productsCreated = newProducts.length;
 	summary.linksAdded = newLinks.length;
+	return summary;
+}
+
+export interface SyncSummary extends UpsertSummary {
+	productsUpdated: number;
+	productsRemoved: number;
+	linksRemoved: number;
+}
+
+/**
+ * Declarative counterpart of upsertProducts for PUT /api/v1/links: afterwards the project holds exactly `inputs`.
+ * Creation still goes through upsertProducts; this reconciles what already existed (fields, link set, order) and
+ * removes what the project no longer publishes. Removing a product drops its click history (cascade).
+ */
+export async function syncProducts(project: Project, inputs: ProductInput[]): Promise<SyncSummary> {
+	const summary: SyncSummary = {
+		...(await upsertProducts(project, inputs)),
+		productsUpdated: 0,
+		productsRemoved: 0,
+		linksRemoved: 0,
+	};
+	const wanted = new Map(inputs.map((input) => [input.externalId, input]));
+	const own = await db.select().from(products).where(eq(products.projectId, project.id));
+
+	const stale = own.filter((p) => !wanted.has(p.externalId)).map((p) => p.id);
+	for (const batch of chunks(stale)) await db.delete(products).where(inArray(products.id, batch));
+	summary.productsRemoved = stale.length;
+
+	const kept = own.filter((p) => wanted.has(p.externalId));
+	const linksByProduct = new Map<string, AffiliateLink[]>();
+	for (const batch of chunks(kept.map((p) => p.id)))
+		for (const link of await db.select().from(affiliateLinks).where(inArray(affiliateLinks.productId, batch)))
+			linksByProduct.set(link.productId, [...(linksByProduct.get(link.productId) ?? []), link]);
+
+	const staleLinks: string[] = [];
+	for (const product of kept) {
+		const input = wanted.get(product.externalId);
+		if (!input) continue;
+		const patch: Partial<typeof products.$inferInsert> = {};
+		if (input.name && input.name !== product.name) patch.name = input.name;
+		if (input.category !== undefined && input.category !== product.category) patch.category = input.category;
+		if (input.pageUrl && input.pageUrl !== product.pageUrl) {
+			if (sameHost(input.pageUrl, project.baseUrl)) patch.pageUrl = input.pageUrl;
+			else summary.errors.push(`${input.externalId}: pageUrl fora do domínio do projeto`);
+		}
+		if (Object.keys(patch).length) {
+			await db.update(products).set(patch).where(eq(products.id, product.id));
+			summary.productsUpdated++;
+		}
+
+		const order = new Map(input.links.map((link, index) => [link.url, { index, store: link.store }]));
+		for (const link of linksByProduct.get(product.id) ?? []) {
+			const target = order.get(link.url);
+			if (!target) {
+				staleLinks.push(link.id);
+				continue;
+			}
+			const store = target.store || link.store;
+			if (link.priority !== target.index || link.store !== store)
+				await db
+					.update(affiliateLinks)
+					.set({ priority: target.index, store })
+					.where(eq(affiliateLinks.id, link.id));
+		}
+	}
+	for (const batch of chunks(staleLinks)) await db.delete(affiliateLinks).where(inArray(affiliateLinks.id, batch));
+	summary.linksRemoved = staleLinks.length;
 	return summary;
 }
 

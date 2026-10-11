@@ -17,7 +17,8 @@
 
 ## Dados
 
-- Produto e link só são criados por `upsertProducts` (`lib/data.ts`): formulário, importação e API passam por ele.
+- Produto e link só são criados por `upsertProducts` (`lib/data.ts`): formulário, importação e API passam por ele. `syncProducts` (PUT da API) cria por ele e só reconcilia o que já existia.
+- Todo produto tem ao menos um link, e link só entra para projeto cujo site responde (`isSiteLive`): vale para API, formulário, importação e criação de projeto.
 - Regra de negócio sem I/O vai em `lib/links.ts` com teste em `lib/links.test.ts`. I/O fica em `lib/data.ts` e `lib/health.ts`.
 - Contagens de clique excluem bots (`is_bot = false`). Total exibido = eventos + `legacy_clicks`.
 - Mudança de schema: edite `db/schema.ts`, rode `bun run db:generate`, revise o SQL, rode `bun run db:migrate` no banco local. Nunca `drizzle-kit push`, nunca editar migration já commitada.

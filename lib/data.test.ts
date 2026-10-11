@@ -2,7 +2,15 @@
 import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import { affiliateLinks, clickEvents, linkChecks, products, projects } from "@/db/schema";
-import { getLinkDetail, getStats, hashToken, listLinks, rotateApiToken, upsertProducts } from "@/lib/data";
+import {
+	getLinkDetail,
+	getStats,
+	hashToken,
+	listLinks,
+	rotateApiToken,
+	syncProducts,
+	upsertProducts,
+} from "@/lib/data";
 import { db } from "@/lib/db";
 import { createProject } from "@/test/helpers";
 
@@ -113,6 +121,111 @@ async function seedClicks() {
 	]);
 	return { project, first, second };
 }
+
+describe("syncProducts", () => {
+	const SHOPEE = "https://s.shopee.com.br/abc";
+
+	test("creates what is new and reports it like upsertProducts", async () => {
+		const project = await createProject();
+		const summary = await syncProducts(project, [{ externalId: `${project.baseUrl}/a`, links: [{ url: ML }] }]);
+		expect(summary).toEqual({
+			productsCreated: 1,
+			linksAdded: 1,
+			errors: [],
+			productsUpdated: 0,
+			productsRemoved: 0,
+			linksRemoved: 0,
+		});
+	});
+
+	test("replaces the link set of a product, following the payload order and stores", async () => {
+		const project = await createProject();
+		const externalId = `${project.baseUrl}/a`;
+		await syncProducts(project, [{ externalId, links: [{ url: ML }, { url: AMZ }] }]);
+		const summary = await syncProducts(project, [
+			{ externalId, links: [{ url: SHOPEE }, { url: ML, store: "ml-custom" }] },
+		]);
+		expect(summary).toMatchObject({ productsCreated: 0, linksAdded: 1, linksRemoved: 1, productsRemoved: 0 });
+		expect((await linksOf(project.slug)).map((l) => [l.url, l.store, l.priority])).toEqual([
+			[SHOPEE, "shopee", 0],
+			[ML, "ml-custom", 1],
+		]);
+	});
+
+	test("keeps the link row (clicks and health) when only its position changes", async () => {
+		const project = await createProject();
+		const externalId = `${project.baseUrl}/a`;
+		await syncProducts(project, [{ externalId, links: [{ url: ML }, { url: AMZ }] }]);
+		const before = await linksOf(project.slug);
+		await syncProducts(project, [{ externalId, links: [{ url: AMZ }, { url: ML }] }]);
+		const after = await linksOf(project.slug);
+		expect(after.map((l) => l.url)).toEqual([AMZ, ML]);
+		expect(after.map((l) => l.id).sort()).toEqual(before.map((l) => l.id).sort());
+	});
+
+	test("updates name, category and page, refusing a page outside the project domain", async () => {
+		const project = await createProject();
+		const externalId = `${project.baseUrl}/a`;
+		await syncProducts(project, [{ externalId, name: "Old", category: "old", links: [{ url: ML }] }]);
+		const moved = await syncProducts(project, [
+			{ externalId, name: "New", category: "new", pageUrl: `${project.baseUrl}/moved`, links: [{ url: ML }] },
+		]);
+		expect(moved).toMatchObject({ productsUpdated: 1, errors: [] });
+		expect((await linksOf(project.slug))[0]).toMatchObject({
+			productName: "New",
+			category: "new",
+			pageUrl: `${project.baseUrl}/moved`,
+		});
+
+		const evil = await syncProducts(project, [
+			{ externalId, pageUrl: "https://evil.example.org/phish", links: [{ url: ML }] },
+		]);
+		expect(evil.errors).toHaveLength(1);
+		expect((await linksOf(project.slug))[0]?.pageUrl).toBe(`${project.baseUrl}/moved`);
+	});
+
+	test("removes products missing from the payload, in this project only", async () => {
+		const project = await createProject();
+		const other = await createProject();
+		await upsertProducts(other, [{ externalId: `${other.baseUrl}/keep`, links: [{ url: ML }] }]);
+		await syncProducts(project, [
+			{ externalId: `${project.baseUrl}/a`, links: [{ url: ML }] },
+			{ externalId: `${project.baseUrl}/b`, links: [{ url: AMZ }] },
+		]);
+		const summary = await syncProducts(project, [{ externalId: `${project.baseUrl}/b`, links: [{ url: AMZ }] }]);
+		expect(summary).toMatchObject({ productsRemoved: 1, linksRemoved: 0, productsCreated: 0 });
+		expect((await linksOf(project.slug)).map((l) => l.externalId)).toEqual([`${project.baseUrl}/b`]);
+		expect(await linksOf(other.slug)).toHaveLength(1);
+	});
+
+	test("never takes over or removes a product of another project", async () => {
+		const project = await createProject();
+		const other = await createProject();
+		const foreign = `${other.baseUrl}/theirs`;
+		await upsertProducts(other, [{ externalId: foreign, links: [{ url: ML }] }]);
+		const summary = await syncProducts(project, [
+			{ externalId: foreign, links: [{ url: AMZ }] },
+			{ externalId: `${project.baseUrl}/mine`, links: [{ url: AMZ }] },
+		]);
+		expect(summary.errors).toEqual([`${foreign}: pertence a outro projeto`]);
+		expect((await linksOf(other.slug)).map((l) => l.url)).toEqual([ML]);
+		expect(await linksOf(project.slug)).toHaveLength(1);
+	});
+
+	test("is idempotent", async () => {
+		const project = await createProject();
+		const payload = [{ externalId: `${project.baseUrl}/a`, name: "A", links: [{ url: ML }, { url: AMZ }] }];
+		await syncProducts(project, payload);
+		expect(await syncProducts(project, payload)).toEqual({
+			productsCreated: 0,
+			linksAdded: 0,
+			errors: [],
+			productsUpdated: 0,
+			productsRemoved: 0,
+			linksRemoved: 0,
+		});
+	});
+});
 
 describe("listLinks", () => {
 	test("counts human clicks per link, adds legacy clicks, excludes bots and lost clicks", async () => {

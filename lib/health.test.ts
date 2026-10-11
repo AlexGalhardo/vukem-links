@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { type AffiliateLink, affiliateLinks, linkChecks } from "@/db/schema";
 import { upsertProducts } from "@/lib/data";
 import { db } from "@/lib/db";
-import { checkLinks } from "@/lib/health";
+import { checkLinks, isSiteLive } from "@/lib/health";
 import { DEAD_AFTER_FAILURES } from "@/lib/links";
 import { createProject, mockFetch } from "@/test/helpers";
 
@@ -150,5 +150,30 @@ describe("checkLinks", () => {
 		expect(summary.checked).toBeGreaterThan(0);
 		expect(seen).toContain(fresh.url);
 		expect((await reload(fresh.id)).status).toBe("alive");
+	});
+});
+
+describe("isSiteLive", () => {
+	test("any answer below 500 counts as online, including a bot block", async () => {
+		for (const status of [200, 301, 403, 404]) {
+			restore = mockFetch(() => ({ status })).restore;
+			expect(await isSiteLive("https://site.example.com")).toBe(true);
+			restore();
+		}
+	});
+
+	test("a server error, a DNS failure or a timeout counts as offline", async () => {
+		restore = mockFetch(() => ({ status: 503 })).restore;
+		expect(await isSiteLive("https://site.example.com")).toBe(false);
+		restore();
+		restore = mockFetch(() => {
+			throw new TypeError("getaddrinfo ENOTFOUND");
+		}).restore;
+		expect(await isSiteLive("https://site.example.com")).toBe(false);
+		restore();
+		restore = mockFetch(() => {
+			throw new DOMException("timed out", "TimeoutError");
+		}).restore;
+		expect(await isSiteLive("https://site.example.com")).toBe(false);
 	});
 });

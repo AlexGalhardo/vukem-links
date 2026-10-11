@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { pickLink, toDevice } from "@/lib/links";
 import { notify } from "@/lib/telegram";
 
-// Public affiliate redirect: /link?id=<product externalId>. URL shape is frozen, projects already link to it.
+// Public affiliate redirect: /link?id=<product externalId>[&store=<store>]. URL shape is frozen, projects already link to it.
 export async function GET(request: NextRequest): Promise<Response> {
 	const externalId = request.nextUrl.searchParams.get("id");
 	const [product] = externalId ? await db.select().from(products).where(eq(products.externalId, externalId)) : [];
@@ -16,7 +16,8 @@ export async function GET(request: NextRequest): Promise<Response> {
 		.from(affiliateLinks)
 		.where(eq(affiliateLinks.productId, product.id))
 		.orderBy(asc(affiliateLinks.priority));
-	const link = pickLink(links);
+	// Optional: a page with one button per store asks for that store. Unknown stores fall back to the priority order.
+	const link = pickLink(links, request.nextUrl.searchParams.get("store") ?? undefined);
 
 	const ua = userAgent(request);
 	const referer = request.headers.get("referer");

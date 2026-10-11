@@ -41,11 +41,16 @@ export function sameHost(a: string, b: string): boolean {
 interface Pickable {
 	status: LinkStatus;
 	priority: number;
+	store?: string;
 }
 
-/** First non-dead link by ascending priority. `unknown` is usable: a link not yet checked must still redirect. */
-export function pickLink<T extends Pickable>(links: T[]): T | undefined {
-	return links.filter((l) => l.status !== "dead").sort((a, b) => a.priority - b.priority)[0];
+/**
+ * First non-dead link by ascending priority. `unknown` is usable: a link not yet checked must still redirect.
+ * With `store`, that store is preferred; when it has no usable link the visitor still gets another store.
+ */
+export function pickLink<T extends Pickable>(links: T[], store?: string): T | undefined {
+	const usable = links.filter((l) => l.status !== "dead").sort((a, b) => a.priority - b.priority);
+	return (store ? usable.find((l) => l.store === store) : undefined) ?? usable[0];
 }
 
 export type CheckResult = "ok" | "failed" | "inconclusive";
@@ -96,7 +101,11 @@ export const productInput = z.object({
 	name: z.string().trim().min(1).max(200).optional(),
 	pageUrl: publicUrl.optional(),
 	category: z.string().trim().max(100).optional(),
-	links: z.array(z.object({ url: publicUrl, store: z.string().trim().max(50).optional() })).max(20),
+	// min(1): a product without a link would redirect every click back to its own page.
+	links: z
+		.array(z.object({ url: publicUrl, store: z.string().trim().max(50).optional() }))
+		.min(1)
+		.max(20),
 });
 export type ProductInput = z.infer<typeof productInput>;
 

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.0] - 2026-10-11
+
+### Added
+
+- `PUT /api/v1/links`: full sync of a project's catalogue. It updates product fields, replaces each product's link set in the payload order and removes what the project no longer publishes.
+- Optional `store` parameter on `/link?id=`, for pages with one button per store.
+- A project only receives links while its site is online: the API answers `409 project_offline`, and the dashboard refuses to create a project, save a product or import for a site that does not answer.
+- The contract between the sites and this dashboard, in `docs/api.md`.
+
+### Changed
+
+- A product without links is refused everywhere (API, form and import).
+- Production runs on `https://links.example.com` (Vercel project `links-example-com`, Turso database from the Vercel Marketplace).
+
 ## [5.1.0] - 2026-10-11
 
 ### Added
@@ -72,6 +86,7 @@ Rewrite around three questions: is the link alive, where is it, and how many cli
 - Security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`); `X-Powered-By` removed.
 - Type errors no longer ignored at build time (`ignoreBuildErrors` removed).
 
-[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v5.1.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v5.2.0...HEAD
+[5.2.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.1.0...v5.2.0
 [5.1.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.0.0...v5.1.0
 [5.0.0]: https://github.com/AlexGalhardo/links.example.com/releases/tag/v5.0.0

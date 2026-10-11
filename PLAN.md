@@ -11,9 +11,10 @@ Decisões e motivos: [`docs/brainstorming.md`](docs/brainstorming.md). Mapa do c
 
 ## Estado atual
 
-- **Versão:** 5.1.0 em `main`, repositório `AlexGalhardo/links.example.com` (histórico recriado em 2026-10-11). Cada commit enviado ao remoto vira uma release com as notas do `CHANGELOG.md`.
+- **Versão:** 5.2.0 em `main`, repositório `AlexGalhardo/links.example.com` (histórico recriado em 2026-10-11). Cada commit enviado ao remoto vira uma release com as notas do `CHANGELOG.md`.
 - **Validado localmente (2026-10-10):** `bun run ci` (typecheck, lint, 45 testes unitários e de integração, build), `bun qa.ts` (96 checks em 2026-10-11), `setups/unix.sh` e `setups/windows.ps1` de ponta a ponta em clone limpo, Docker com QA no container.
-- **Produção ainda roda a v4.** O banco Turso de produção não foi tocado.
+- **Produção:** `https://links.example.com` (projeto Vercel `links-example-com`, deploy pelo CLI `vercel deploy --prod`). Banco Turso novo criado pelo Vercel Marketplace em 2026-10-11, com as migrations da v5 e a seed (admin + projeto EletroRadar, 381 links). Os dados da v4 não foram migrados.
+- **Contrato com os sites:** [`docs/api.md`](docs/api.md). Os sites sincronizam o catálogo no build com `PUT /api/v1/links` e apontam os botões para `/link?id=&store=`.
 
 ## Fases da v5
 
@@ -33,8 +34,8 @@ Decisões e motivos: [`docs/brainstorming.md`](docs/brainstorming.md). Mapa do c
 Detalhes e contexto em `questions-to-dev.md` (raiz, fora do git).
 
 - [x] Revisar e apagar `_legacy/` (removido em 5.1.0).
-- [ ] Rodar a migração no Turso de produção: `bun run db:migrate` e depois `bun run db:migrate-v4` ([`docs/migration-v4.md`](docs/migration-v4.md)).
-- [ ] Definir na Vercel: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CRON_SECRET`; rodar `bun run db:seed` contra produção para criar o admin.
+- [x] Variáveis de produção definidas na Vercel e admin criado pela seed (2026-10-11).
+- [ ] Conectar o repositório GitHub ao projeto Vercel para deploy automático por push (hoje o deploy é manual pelo CLI).
 - [ ] Reativar o gatilho do CI quando o billing do GitHub Actions estiver resolvido ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 - [ ] Ajustar `SECURITY.md` (veio de outro projeto; foi adaptado, confirme o canal de contato).
 

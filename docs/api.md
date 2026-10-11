@@ -1,30 +1,47 @@
 # API e importação
 
+## Contrato com os sites
+
+Este dashboard é o único gerenciador dos links de afiliado de todos os sites (CMS e sites estáticos). O contrato tem quatro regras:
+
+1. **Identidade.** Cada produto de um site tem um `externalId` estável e único entre todos os projetos. Padrão: `<url do site>/<página>/<id do produto>`, por exemplo `https://example.com/melhor-airfryer-8-litros/arno-dual-afd2-8-3l`.
+2. **Registro no build.** O site roda um script de sincronização antes do build e envia o catálogo inteiro com `PUT /api/v1/links`. Se a chamada falhar ou recusar algum item, o build falha: nenhuma página vai ao ar com link de afiliado fora do dashboard.
+3. **Renderização.** O site nunca aponta direto para a loja. Todo botão usa `GET /link?id=<externalId>&store=<loja>`.
+4. **Site no ar.** O dashboard só aceita links de um projeto cuja URL base responde. Projeto fora do ar recebe `409`.
+
+Cada site guarda dois valores: a URL do dashboard e o token do projeto. O token fica só na variável de ambiente do provedor de deploy, nunca no repositório.
+
 ## Redirect público
 
 ```text
-GET /link?id=<externalId>
+GET /link?id=<externalId>[&store=<loja>]
 ```
 
 `externalId` é o identificador do produto (URL-encoded). Resposta: `302` para o link de afiliado de maior prioridade que não esteja morto; se todos estiverem mortos, `302` para a página do produto. `404` se o produto não existe.
 
+`store` é opcional e serve às páginas com um botão por loja (`mercadolivre`, `amazon`, `shopee`, ...). O redirect prefere o link vivo dessa loja; se ela não tiver link vivo, ou o valor for desconhecido, vale a ordem de prioridade.
+
 Nos projetos, use como `href` do botão de compra:
 
 ```html
-<a href="https://links.exemplo.com/link?id=https%3A%2F%2Fapp.meuprojeto.com%2Ffones%2Fmodelo-x" rel="nofollow sponsored">Comprar</a>
+<a href="https://links.exemplo.com/link?id=https%3A%2F%2Fapp.meuprojeto.com%2Ffones%2Fmodelo-x&store=amazon" rel="nofollow sponsored">Comprar</a>
 ```
 
 ## Cadastro pelos projetos
 
 ```text
-POST /api/v1/links
 Authorization: Bearer <token do projeto>
 Content-Type: application/json
 ```
 
 O token é gerado na página do projeto ("Gerar token da API"), aparece uma única vez e gerar outro invalida o anterior.
 
-Corpo: um produto ou um array de até 500.
+| Método | Uso | Corpo | Remove algo? |
+| --- | --- | --- | --- |
+| `PUT /api/v1/links` | Sincronização completa (script de build) | Array com o catálogo inteiro, de 1 a 5000 produtos, sem `externalId` repetido | Sim |
+| `POST /api/v1/links` | Acréscimo pontual | Um produto ou um array de até 500 | Não |
+
+Produto:
 
 ```json
 {
@@ -39,25 +56,44 @@ Corpo: um produto ou um array de até 500.
 | Campo | Obrigatório | Observação |
 | --- | --- | --- |
 | `externalId` | Sim | Único entre todos os projetos |
+| `links` | Sim | De 1 a 20. Produto sem link é recusado |
 | `links[].url` | Sim | http(s), host público |
 | `name` | Não | Padrão: último trecho do `externalId` |
 | `pageUrl` | Não | Padrão: `externalId` se for URL, senão a URL base do projeto. Precisa estar no domínio do projeto |
 | `category` | Não | Texto livre |
 | `links[].store` | Não | Padrão: detectada pelo host |
 
-A chamada é idempotente: produto existente recebe só os links novos, no fim da ordem de prioridade.
+### PUT: sincronização completa
+
+Depois da chamada, o projeto contém exatamente o corpo enviado:
+
+- Produto novo é criado.
+- Produto existente tem `name`, `category` e `pageUrl` atualizados; os links passam a ser os do corpo, na ordem do corpo. Link que continua mantém cliques e estado de saúde; link que saiu é apagado.
+- Produto do projeto ausente do corpo é apagado, junto com seus cliques.
+
+Um corpo vazio é `400`, então um script com defeito não apaga o catálogo. A chamada é idempotente.
+
+### POST: acréscimo
+
+Produto existente recebe só os links novos, no fim da ordem de prioridade. Nada é atualizado nem removido. A chamada é idempotente.
+
+### Respostas
 
 | Status | Significado |
 | --- | --- |
-| `201` | Tudo aplicado. Corpo: `{ productsCreated, linksAdded, errors: [] }` |
-| `207` | Parte recusada; veja `errors` |
+| `200` | `PUT` aplicado. Corpo: `{ productsCreated, productsUpdated, productsRemoved, linksAdded, linksRemoved, errors: [] }` |
+| `201` | `POST` aplicado. Corpo: `{ productsCreated, linksAdded, errors: [] }` |
+| `207` | Parte recusada; veja `errors`. O restante foi aplicado |
 | `400` | Corpo inválido (`issues` traz o detalhe) |
 | `401` | Token ausente ou inválido |
+| `409` | `{ "error": "project_offline" }`: a URL base do projeto não respondeu. Nada foi gravado |
+
+Itens recusados em `errors`: `externalId` que pertence a outro projeto, ou `pageUrl` fora do domínio do projeto.
 
 ```bash
-curl -X POST https://links.exemplo.com/api/v1/links \
+curl -X PUT https://links.exemplo.com/api/v1/links \
   -H "Authorization: Bearer la_xxxxx" -H "Content-Type: application/json" \
-  -d '{"externalId":"https://app.meuprojeto.com/fones/modelo-x","links":[{"url":"https://amzn.to/abc123"}]}'
+  -d '[{"externalId":"https://app.meuprojeto.com/fones/modelo-x","links":[{"url":"https://amzn.to/abc123"}]}]'
 ```
 
 ## Importação pelo dashboard
@@ -67,4 +103,4 @@ Página do projeto → "Importar JSON/CSV". Aceita:
 - **JSON**: array no formato acima, ou o formato da v4 (`seed.json`): `{ id, category, mercadolivreUrl, amazonUrl, shopeeUrl }`.
 - **CSV** com cabeçalho `externalId,url,name,pageUrl,category,store`. Só `externalId` e `url` são obrigatórios. Linhas com o mesmo `externalId` viram um produto com vários links, na ordem do arquivo.
 
-Limite: 5000 produtos por importação.
+Limite: 5000 produtos por importação. Todo produto precisa de ao menos um link, e o site do projeto precisa estar no ar.

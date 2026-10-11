@@ -2,7 +2,7 @@
 // /link and /api/links use next/headers and after(): they are covered end to end by qa.ts.
 import { afterEach, describe, expect, test } from "bun:test";
 import { GET as cron } from "@/app/api/cron/health/route";
-import { POST as registerLinks } from "@/app/api/v1/links/route";
+import { POST as registerLinks, PUT as syncLinks } from "@/app/api/v1/links/route";
 import { listLinks, rotateApiToken, upsertProducts } from "@/lib/data";
 import { createProject, mockFetch } from "@/test/helpers";
 
@@ -59,6 +59,8 @@ describe("GET /api/cron/health", () => {
 
 describe("POST /api/v1/links", () => {
 	async function setup() {
+		// The route refuses links for a site that is offline: by default the project site answers.
+		restore = mockFetch(() => ({ status: 200 })).restore;
 		const project = await createProject();
 		const token = await rotateApiToken(project.id);
 		const post = (body: unknown, bearer: string | null = token): Promise<Response> =>
@@ -125,5 +127,130 @@ describe("POST /api/v1/links", () => {
 		const summary = (await res.json()) as { productsCreated: number; errors: string[] };
 		expect(summary.productsCreated).toBe(1);
 		expect(summary.errors).toHaveLength(1);
+	});
+});
+
+describe("project site must be online", () => {
+	test("409 on POST and PUT while the site does not answer, writing nothing", async () => {
+		const project = await createProject();
+		const token = await rotateApiToken(project.id);
+		const body = JSON.stringify([{ externalId: `${project.baseUrl}/p`, links: [{ url: "https://amzn.to/x" }] }]);
+		const request = (method: string): Request =>
+			new Request("http://localhost/api/v1/links", {
+				method,
+				headers: { authorization: `Bearer ${token}` },
+				body,
+			});
+		for (const offline of [
+			() => ({ status: 503 }),
+			() => {
+				throw new TypeError("getaddrinfo ENOTFOUND");
+			},
+		]) {
+			restore = mockFetch(offline).restore;
+			for (const res of [await registerLinks(request("POST")), await syncLinks(request("PUT"))]) {
+				expect(res.status).toBe(409);
+				expect(await res.json()).toEqual({ error: "project_offline", baseUrl: project.baseUrl });
+			}
+			restore();
+		}
+		expect((await listLinks()).filter((l) => l.projectSlug === project.slug)).toHaveLength(0);
+	});
+
+	test("an invalid token or body is answered before the site is probed", async () => {
+		let fetched = 0;
+		restore = mockFetch(() => {
+			fetched++;
+			return { status: 200 };
+		}).restore;
+		const project = await createProject();
+		const token = await rotateApiToken(project.id);
+		const call = (bearer: string, body: string): Promise<Response> =>
+			syncLinks(
+				new Request("http://localhost/api/v1/links", {
+					method: "PUT",
+					headers: { authorization: `Bearer ${bearer}` },
+					body,
+				}),
+			);
+		expect((await call("la_unknown", "[]")).status).toBe(401);
+		expect((await call(token, "[]")).status).toBe(400);
+		expect(fetched).toBe(0);
+	});
+});
+
+describe("PUT /api/v1/links", () => {
+	async function setup() {
+		restore = mockFetch(() => ({ status: 200 })).restore;
+		const project = await createProject();
+		const token = await rotateApiToken(project.id);
+		const put = (body: unknown, bearer: string | null = token): Promise<Response> =>
+			syncLinks(
+				new Request("http://localhost/api/v1/links", {
+					method: "PUT",
+					headers: bearer === null ? {} : { authorization: `Bearer ${bearer}` },
+					body: typeof body === "string" ? body : JSON.stringify(body),
+				}),
+			);
+		const own = async () => (await listLinks()).filter((l) => l.projectSlug === project.slug);
+		return { project, put, own };
+	}
+
+	test("401 without a valid token", async () => {
+		const { project, put, own } = await setup();
+		const body = [{ externalId: `${project.baseUrl}/p`, links: [{ url: "https://amzn.to/x" }] }];
+		expect((await put(body, null)).status).toBe(401);
+		expect((await put(body, "la_unknown")).status).toBe(401);
+		expect(await own()).toHaveLength(0);
+	});
+
+	test("200 makes the project match the payload: adds, replaces and removes", async () => {
+		const { project, put, own } = await setup();
+		const a = `${project.baseUrl}/a`;
+		const b = `${project.baseUrl}/b`;
+		const first = await put([
+			{ externalId: a, links: [{ url: "https://amzn.to/a" }, { url: "https://s.shopee.com.br/a" }] },
+			{ externalId: b, links: [{ url: "https://amzn.to/b" }] },
+		]);
+		expect(first.status).toBe(200);
+		expect(await first.json()).toMatchObject({ productsCreated: 2, linksAdded: 3, productsRemoved: 0 });
+
+		const second = await put([{ externalId: a, links: [{ url: "https://meli.la/a" }] }]);
+		expect(second.status).toBe(200);
+		expect(await second.json()).toMatchObject({ linksAdded: 1, linksRemoved: 2, productsRemoved: 1 });
+		expect((await own()).map((l) => [l.externalId, l.url, l.store])).toEqual([
+			[a, "https://meli.la/a", "mercadolivre"],
+		]);
+	});
+
+	test("400 for an empty catalogue, a product without links, repeated ids and bad JSON, removing nothing", async () => {
+		const { project, put, own } = await setup();
+		const a = `${project.baseUrl}/a`;
+		await put([{ externalId: a, links: [{ url: "https://amzn.to/a" }] }]);
+		const link = { url: "https://amzn.to/z" };
+		const bodies: unknown[] = [
+			"{not json",
+			[],
+			{ externalId: a, links: [link] },
+			[{ externalId: a, links: [] }],
+			[
+				{ externalId: a, links: [link] },
+				{ externalId: a, links: [link] },
+			],
+			[{ externalId: a, links: [{ url: "http://127.0.0.1/admin" }] }],
+		];
+		for (const body of bodies) expect((await put(body)).status).toBe(400);
+		expect((await own()).map((l) => l.url)).toEqual(["https://amzn.to/a"]);
+	});
+
+	test("207 when an item is refused, still applying the rest", async () => {
+		const { project, put, own } = await setup();
+		const res = await put([
+			{ externalId: `${project.baseUrl}/ok`, links: [{ url: "https://amzn.to/ok" }] },
+			{ externalId: "https://elsewhere.example.org/p", links: [{ url: "https://amzn.to/no" }] },
+		]);
+		expect(res.status).toBe(207);
+		expect(((await res.json()) as { errors: string[] }).errors).toHaveLength(1);
+		expect(await own()).toHaveLength(1);
 	});
 });

@@ -96,8 +96,11 @@ const XSS_NAME = "<img src=x onerror=window.__qaXss=1>QA";
 const SQLI_PAYLOADS = ["' OR '1'='1", "'; DROP TABLE user; --", "admin'--"];
 
 const RUN = Date.now().toString(36);
-const PROJECT = { name: `QA ${RUN}`, slug: `qa-${RUN}`, baseUrl: `https://qa-${RUN}.example.com` };
-const PRODUCT_ID = `${PROJECT.baseUrl}/produto/fone`;
+// A project is only accepted while its site answers, so the base URL must be a real, online host.
+const PROJECT = { name: `QA ${RUN}`, slug: `qa-${RUN}`, baseUrl: "https://example.com" };
+// externalId is unique across projects: the run id keeps a leftover from a failed run from colliding.
+const PAGE = `${PROJECT.baseUrl}/qa-${RUN}`;
+const PRODUCT_ID = `${PAGE}/produto/fone`;
 // .invalid never resolves (RFC 2606): the health check fails fast and deterministically, with no real store involved.
 const LINK_A = `https://a-${RUN}.invalid/oferta`;
 const LINK_B = `https://b-${RUN}.invalid/oferta`;
@@ -264,7 +267,7 @@ async function suiteCrud(page: Page, api: APIRequestContext): Promise<void> {
 	await guarded("input validation", async () => {
 		await page.goto(`/projects/${PROJECT.slug}`);
 		await page.getByRole("button", { name: "Novo link" }).click();
-		await page.getByLabel("ID do produto (externalId)").fill(`${PROJECT.baseUrl}/produto/js`);
+		await page.getByLabel("ID do produto (externalId)").fill(`${PAGE}/produto/js`);
 		await page.getByLabel(/Links de afiliado/).fill("javascript:alert(1)");
 		await page.getByRole("button", { name: "Salvar" }).click();
 		await page.getByText("URL http(s) pública obrigatória").first().waitFor();
@@ -295,7 +298,7 @@ async function suiteCrud(page: Page, api: APIRequestContext): Promise<void> {
 
 async function suiteRedirect(page: Page, api: APIRequestContext, anon: APIRequestContext): Promise<void> {
 	suite("4. Redirect, click tracking, health check and fallback");
-	const referer = `${PROJECT.baseUrl}/produto/fone?utm_source=qa&email=someone@example.com`;
+	const referer = `${PAGE}/produto/fone?utm_source=qa&email=someone@example.com`;
 
 	await guarded("redirect and tracking", async () => {
 		assert(
@@ -312,7 +315,7 @@ async function suiteRedirect(page: Page, api: APIRequestContext, anon: APIReques
 		assert("two human clicks are counted, the bot is not", a?.clicks === 2, `clicks=${a?.clicks}`);
 		assert("one click is mobile", a?.mobile === 1, `mobile=${a?.mobile}`);
 		await page.goto(`/links/${a?.id}`);
-		await page.getByText(`${PROJECT.baseUrl}/produto/fone`, { exact: true }).first().waitFor();
+		await page.getByText(`${PAGE}/produto/fone`, { exact: true }).first().waitFor();
 		assert(
 			"referer is stored without its query string",
 			(await page.getByText("someone@example.com").count()) === 0,
@@ -385,7 +388,7 @@ async function suiteProjectApi(page: Page, api: APIRequestContext, anon: APIRequ
 
 		const created = await anon.post("/api/v1/links", {
 			headers: auth,
-			data: { externalId: `${PROJECT.baseUrl}/produto/api`, links: [{ url: "https://amzn.to/qa" }] },
+			data: { externalId: `${PAGE}/produto/api`, links: [{ url: "https://amzn.to/qa" }] },
 		});
 		assert("valid payload creates the product", created.status() === 201, `status ${created.status()}`);
 		const row = (await ownLinks(api)).find((l) => l.externalId.endsWith("/produto/api"));
@@ -393,7 +396,7 @@ async function suiteProjectApi(page: Page, api: APIRequestContext, anon: APIRequ
 
 		const again = await anon.post("/api/v1/links", {
 			headers: auth,
-			data: { externalId: `${PROJECT.baseUrl}/produto/api`, links: [{ url: "https://amzn.to/qa" }] },
+			data: { externalId: `${PAGE}/produto/api`, links: [{ url: "https://amzn.to/qa" }] },
 		});
 		assert(
 			"repeating the call is idempotent",
@@ -409,7 +412,7 @@ async function suiteProjectApi(page: Page, api: APIRequestContext, anon: APIRequ
 		assert("malformed JSON is 400", notJson.status() === 400, `status ${notJson.status()}`);
 		const unsafe = await anon.post("/api/v1/links", {
 			headers: auth,
-			data: { externalId: `${PROJECT.baseUrl}/produto/x`, links: [{ url: "javascript:alert(1)" }] },
+			data: { externalId: `${PAGE}/produto/x`, links: [{ url: "javascript:alert(1)" }] },
 		});
 		assert("javascript: URL is 400", unsafe.status() === 400, `status ${unsafe.status()}`);
 		const foreign = await anon.post("/api/v1/links", {
@@ -426,7 +429,7 @@ async function suiteProjectApi(page: Page, api: APIRequestContext, anon: APIRequ
 	await guarded("import", async () => {
 		await page.goto(`/projects/${PROJECT.slug}`);
 		await page.getByRole("button", { name: "Importar JSON/CSV" }).click();
-		const csv = `externalId,url,name\n${PROJECT.baseUrl}/produto/csv,https://s.shopee.com.br/qa,"Fone, CSV"\n`;
+		const csv = `externalId,url,name\n${PAGE}/produto/csv,https://s.shopee.com.br/qa,"Fone, CSV"\n`;
 		await page.getByLabel("Conteúdo JSON ou CSV").fill(csv);
 		await page.getByRole("button", { name: "Importar", exact: true }).click();
 		await page.getByText("1 produto(s) e 1 link(s) importados, 0 erro(s)").waitFor();

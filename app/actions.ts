@@ -6,7 +6,7 @@ import { z } from "zod";
 import { affiliateLinks, projects } from "@/db/schema";
 import { rotateApiToken, type UpsertSummary, upsertProducts } from "@/lib/data";
 import { db } from "@/lib/db";
-import { type CheckSummary, checkLinks } from "@/lib/health";
+import { type CheckSummary, checkLinks, isSiteLive } from "@/lib/health";
 import { detectStore, isPublicHttpUrl, parseImport, productInput } from "@/lib/links";
 import { requireSession } from "@/lib/session";
 
@@ -30,6 +30,19 @@ async function findProject(id: string): Promise<typeof projects.$inferSelect> {
 	return project;
 }
 
+/** Links only exist for a site that is online: refuses a project whose base URL does not answer. */
+async function requireLive(baseUrl: string): Promise<void> {
+	if (await isSiteLive(baseUrl)) return;
+	throw new z.ZodError([
+		{
+			code: "custom",
+			message: `O site ${baseUrl} não respondeu. Publique o site antes.`,
+			path: [],
+			input: baseUrl,
+		},
+	]);
+}
+
 const projectInput = z.object({
 	name: z.string().trim().min(1).max(80),
 	slug: z
@@ -45,6 +58,7 @@ export async function createProject(input: unknown): Promise<Result> {
 		const data = projectInput.parse(input);
 		const [existing] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, data.slug));
 		if (existing) return { ok: false, error: "Já existe um projeto com esse slug" };
+		await requireLive(data.baseUrl);
 		await db.insert(projects).values(data);
 		revalidatePath("/", "layout");
 		return { ok: true };
@@ -67,7 +81,10 @@ export async function deleteProject(id: string): Promise<Result> {
 export async function saveProduct(projectId: string, input: unknown): Promise<Result<{ summary: UpsertSummary }>> {
 	try {
 		await requireSession();
-		const summary = await upsertProducts(await findProject(projectId), [productInput.parse(input)]);
+		const project = await findProject(projectId);
+		const product = productInput.parse(input);
+		await requireLive(project.baseUrl);
+		const summary = await upsertProducts(project, [product]);
 		if (summary.errors[0]) return { ok: false, error: summary.errors[0] };
 		revalidatePath("/", "layout");
 		return { ok: true, summary };
@@ -79,7 +96,10 @@ export async function saveProduct(projectId: string, input: unknown): Promise<Re
 export async function importProducts(projectId: string, text: string): Promise<Result<{ summary: UpsertSummary }>> {
 	try {
 		await requireSession();
-		const summary = await upsertProducts(await findProject(projectId), parseImport(text));
+		const project = await findProject(projectId);
+		const rows = parseImport(text);
+		await requireLive(project.baseUrl);
+		const summary = await upsertProducts(project, rows);
 		revalidatePath("/", "layout");
 		return { ok: true, summary };
 	} catch (error) {
