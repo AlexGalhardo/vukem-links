@@ -11,9 +11,10 @@ Todo clique passa por `GET /link?id=<id do produto>`, que redireciona (302) para
 ## Rodar local
 
 ```bash
-./setups/unix.sh         # Linux / macOS
-.\setups\windows.ps1     # Windows
-./setups/docker.sh       # Docker (build de produção)
+bash setups/setup-unix-local.sh             # Linux / macOS
+bash setups/setup-windows-local.sh          # Windows (Git Bash)
+bash setups/setup-unix-with-docker.sh       # Linux / macOS + Docker (build de produção)
+bash setups/setup-windows-with-docker.sh    # Windows (Git Bash) + Docker
 ```
 
 <http://localhost:3000> — login `admin@example.com`, senha em `ADMIN_PASSWORD` do `.env`. Detalhes em [`docs/setup.md`](docs/setup.md).
@@ -37,6 +38,10 @@ Next.js 16 · React 19 · TypeScript · Tailwind CSS v4 · Base UI · TanStack Q
 | --- | --- |
 | [`PLAN.md`](PLAN.md) | Estado atual, pendências e próximos passos |
 | [`CHANGELOG.md`](CHANGELOG.md) | Histórico de versões |
+| [`docs/setup.md`](docs/setup.md) | Scripts de setup, variáveis de ambiente, Docker |
+| [`docs/agent-setup.md`](docs/agent-setup.md) | Setup do zero, passo a passo com verificação (local, Docker, GitHub, Vercel) |
+| [`docs/tooling.md`](docs/tooling.md) | Ferramentas e configuração |
+| [`docs/workflows.md`](docs/workflows.md) | Commit, release e deploy |
 | [`docs/architecture.md`](docs/architecture.md) | Modelo de dados e fluxos |
 | [`docs/health-check.md`](docs/health-check.md) | Como um link é considerado vivo ou morto |
 | [`docs/api.md`](docs/api.md) | Redirect, API de cadastro e importação |

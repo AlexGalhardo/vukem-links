@@ -39,6 +39,9 @@ git tag -a vX.Y.Z -m "vX.Y.Z"
 
 Do not push the commit or the tag, and do not deploy, unless the dev asked for it in this session.
 
+When the dev does ask: every pushed commit carries its own version, tag and GitHub Release with that version's
+changelog section. The push, the `gh release create` command and the Vercel deploy are in `docs/workflows.md`.
+
 ## Commit messages (Conventional Commits, enforced by commitlint)
 
 `<type>(<scope>): <subject>` — imperative, lower case, no trailing period, in English.

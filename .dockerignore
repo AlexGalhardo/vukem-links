@@ -7,6 +7,11 @@ node_modules
 *.db-*
 _legacy
 .claude
+.vercel
+.github
 docs
+infra
+setups
+*.tsbuildinfo
 qa-report.json
 questions-to-dev.md

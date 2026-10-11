@@ -29,7 +29,9 @@ Next.js 16 (App Router, Server Components) · React 19 · TypeScript 7 strict ·
 | `db/schema.ts`, `drizzle/` | Schema e migrations versionadas |
 | `**/*.test.ts`, `test/` | Testes unitários e de integração (`bun test`); `test/setup.ts` cria o banco descartável |
 | `qa.ts` | QA end-to-end (Playwright) |
-| `setups/` | Scripts para subir local (Unix, Windows, Docker) |
+| `setups/` | Quatro scripts bash para subir do zero: `setup-{unix,windows}-{local,with-docker}.sh` (+ `_common.sh`) |
+| `infra/` | `Dockerfile` e `docker-compose.yml` do ambiente de teste local (o `.dockerignore` fica na raiz, que é o contexto de build) |
+| `vercel.json` | Crons de produção |
 
 ## Regras do projeto
 
@@ -45,15 +47,19 @@ Detalhadas em [`rules/project.md`](rules/project.md). As que mais quebram coisas
 
 | Documento | Conteúdo |
 | --- | --- |
+| [`docs/agent-setup.md`](../docs/agent-setup.md) | **Setup do zero para agentes**: dependências, `.env`, banco, local, Docker, testes, GitHub e Vercel, com comando e verificação por passo |
+| [`docs/setup.md`](../docs/setup.md) | Scripts de `setups/`, variáveis de ambiente, Docker (`infra/`) |
+| [`docs/architecture.md`](../docs/architecture.md) | Modelo de dados, fluxos (redirect, clique, saúde) e camadas |
+| [`docs/tooling.md`](../docs/tooling.md) | Ferramentas e onde cada uma é configurada: Bun, scripts do `package.json`, Biome, hooks, Drizzle, `gh`, `vercel` |
+| [`docs/workflows.md`](../docs/workflows.md) | Fluxo de tarefa, commit, release (tag + GitHub Release) e deploy na Vercel (variáveis, Turso, crons) |
 | [`docs/brainstorming.md`](../docs/brainstorming.md) | Decisões da v5 e seus motivos |
-| [`docs/architecture.md`](../docs/architecture.md) | Modelo de dados e fluxos (redirect, clique, saúde) |
-| [`docs/setup.md`](../docs/setup.md) | Subir local (Unix, Windows, Docker), variáveis de ambiente, deploy |
 | [`docs/health-check.md`](../docs/health-check.md) | Como um link vira vivo, morto ou inconclusivo |
 | [`docs/api.md`](../docs/api.md) | `POST /api/v1/links` e formatos de importação |
 | [`docs/auth.md`](../docs/auth.md) | Better Auth, criação do admin, rate limit |
 | [`docs/qa.md`](../docs/qa.md) | `qa.ts`, testes unitários, gate de CI |
 | [`docs/migration-v4.md`](../docs/migration-v4.md) | Migração dos dados da v4 |
 | [`docs/conventions.md`](../docs/conventions.md) | SemVer, Keep a Changelog, Conventional Commits |
+| [`docs/PROMPT SEED.md`](../docs/PROMPT%20SEED.md) | Histórico: prompt original que gerou o seed legado (não descreve o estado atual) |
 
 ## Skills do projeto
 
@@ -62,4 +68,4 @@ Detalhadas em [`rules/project.md`](rules/project.md). As que mais quebram coisas
 | `links-local-verification` | Antes de dar qualquer tarefa como concluída |
 | `links-secure-endpoint` | Ao criar ou alterar server action, rota de API ou o redirect |
 | `links-db-change` | Ao mexer em `db/schema.ts` |
-| `links-release` | Ao fechar uma versão (bump, changelog, tag) |
+| `links-release` | Ao fechar uma versão (bump, changelog, tag); push e GitHub Release em [`docs/workflows.md`](../docs/workflows.md#release) |

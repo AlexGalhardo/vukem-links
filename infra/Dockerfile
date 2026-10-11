@@ -1,4 +1,5 @@
-# Local test image. Build context is the repo root: docker compose -f setups/docker-compose.yml up --build
+# Local test image. Build context is the repo root (its .dockerignore applies):
+#   docker compose -f infra/docker-compose.yml --env-file .env build
 FROM oven/bun:1.4.2-slim AS deps
 WORKDIR /app
 COPY package.json bun.lock ./

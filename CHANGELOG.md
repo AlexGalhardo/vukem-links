@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.1.0] - 2026-10-11
+
+### Added
+
+- Setup scripts for Git Bash on Windows: `setups/setup-windows-local.sh` and `setups/setup-windows-with-docker.sh`.
+- The setup scripts check the required tools (Bun; Docker, Compose and a running daemon for the Docker ones) and say how to install what is missing.
+- The setup scripts generate `BETTER_AUTH_SECRET`, `CRON_SECRET` and `LINKS_API_KEY` in `.env` when they are empty, without replacing existing values or printing them.
+- A busy port no longer breaks the setup: the next free port is used and announced, or the script stops with a clear message when the port was chosen with `PORT`/`APP_PORT`.
+- `--no-start` (or `SETUP_SKIP_START=1`) prepares everything without starting the app.
+- Documentation for AI agents: `docs/agent-setup.md` (setup from zero with a verification per step, including GitHub and Vercel), `docs/tooling.md` and `docs/workflows.md` (commit, release and deploy).
+
+### Changed
+
+- The setup scripts were renamed: `setups/unix.sh` is now `setups/setup-unix-local.sh` and `setups/docker.sh` is now `setups/setup-unix-with-docker.sh`.
+- The Docker files moved from `setups/` to `infra/` (`infra/Dockerfile`, `infra/docker-compose.yml`).
+- The Docker setup starts the stack in background, waits until the app answers and reads its secrets and the admin account from the root `.env` instead of built-in defaults (the admin password is no longer `admin-local-123`).
+- The local setup scripts refuse to migrate or seed when `TURSO_DATABASE_URL` is not a local file.
+
+### Removed
+
+- The PowerShell scripts `setups/windows.ps1` and `setups/docker.ps1`: on Windows the setup runs in Git Bash.
+
 ## [6.0.0] - 2026-10-11
 
 ### Added
@@ -118,7 +140,8 @@ Rewrite around three questions: is the link alive, where is it, and how many cli
 - Security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`); `X-Powered-By` removed.
 - Type errors no longer ignored at build time (`ignoreBuildErrors` removed).
 
-[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v6.0.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v6.1.0...HEAD
+[6.1.0]: https://github.com/AlexGalhardo/links.example.com/compare/v6.0.0...v6.1.0
 [6.0.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.4.0...v6.0.0
 [5.4.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.3.0...v5.4.0
 [5.3.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.2.0...v5.3.0

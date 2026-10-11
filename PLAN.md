@@ -11,9 +11,10 @@ Decisões e motivos: [`docs/brainstorming.md`](docs/brainstorming.md). Mapa do c
 
 ## Estado atual
 
-- **Versão:** 6.0.0 em `main`, repositório `AlexGalhardo/links.example.com` (histórico recriado em 2026-10-11). Cada commit enviado ao remoto vira uma release com as notas do `CHANGELOG.md`.
-- **Validado localmente (2026-10-10):** `bun run ci` (typecheck, lint, 45 testes unitários e de integração, build), `bun qa.ts` (96 checks em 2026-10-11), `setups/unix.sh` e `setups/windows.ps1` de ponta a ponta em clone limpo, Docker com QA no container.
-- **Produção:** `https://links.example.com` (projeto Vercel `links-example-com`, deploy pelo CLI `vercel deploy --prod`). Banco Turso novo criado pelo Vercel Marketplace em 2026-10-11, com as migrations da v5 e a seed (admin + projeto EletroRadar, 381 links). Os dados da v4 não foram migrados.
+- **Versão:** 6.1.0 em `main`, repositório `AlexGalhardo/links.example.com` (histórico recriado em 2026-10-11). Cada commit enviado ao remoto vira uma release com as notas do `CHANGELOG.md` ([`docs/workflows.md`](docs/workflows.md)).
+- **Validado localmente:** `bun run ci` (typecheck, lint, testes unitários e de integração, build) em 2026-10-11; `bun qa.ts` (96 checks em 2026-10-11, antes da 6.1.0, que não mexe em código do app).
+- **Setup (6.1.0, validado em 2026-10-11 no Windows/Git Bash):** `setups/setup-windows-local.sh` de ponta a ponta em cópia limpa (cria `.env`, gera segredos, instala, migra, popula, sobe o servidor e o login responde 200; porta ocupada vira a próxima livre) e na pasta do projeto; `setups/setup-windows-with-docker.sh` com build da imagem, container no ar, `/health` 200 e re-execução idempotente. Os dois scripts `setup-unix-*` compartilham toda a lógica (`setups/_common.sh`) mas **não foram executados em Linux/macOS**: só `bash -n`.
+- **Produção:** `https://links.example.com` (projeto Vercel `links-example-com`, deploy pelo CLI `vercel deploy --prod`). Banco Turso novo criado pelo Vercel Marketplace em 2026-10-11, com as migrations da v5 e a seed (admin + projeto EletroRadar, 381 links). Os dados da v4 não foram migrados. A 6.1.0 não foi publicada na Vercel (só muda docs, `setups/` e `infra/`).
 - **Contrato com os sites:** [`docs/api.md`](docs/api.md). Os sites sincronizam o catálogo no build com `PUT /api/v1/links?site=` (chave única `LINKS_API_KEY`, projeto criado no primeiro contato), apontam os botões para `/link?id=&store=` e caem para o link direto da loja quando `/health` não responde.
 
 ## Fases da v5
@@ -38,6 +39,7 @@ Detalhes e contexto em `questions-to-dev.md` (raiz, fora do git).
 - [ ] Conectar o repositório GitHub ao projeto Vercel para deploy automático por push (hoje o deploy é manual pelo CLI).
 - [ ] Reativar o gatilho do CI quando o billing do GitHub Actions estiver resolvido ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 - [ ] Ajustar `SECURITY.md` (veio de outro projeto; foi adaptado, confirme o canal de contato).
+- [ ] Rodar `setups/setup-unix-local.sh` e `setups/setup-unix-with-docker.sh` em Linux ou macOS (validados só no Windows/Git Bash).
 
 ## Próximos passos (sugestões, por valor)
 
@@ -59,4 +61,5 @@ Detalhes e contexto em `questions-to-dev.md` (raiz, fora do git).
 | `bun run db:generate` | Gera migration a partir de `db/schema.ts` |
 | `bun run db:migrate` | Aplica migrations |
 | `bun run db:seed` | Cria admin + projeto EletroRadar a partir de `seed.json` |
-| `setups/unix.sh`, `setups/windows.ps1`, `setups/docker.sh` | Sobe o app do zero ([`docs/setup.md`](docs/setup.md)) |
+| `bash setups/setup-{unix,windows}-local.sh` | Sobe o app do zero com Bun ([`docs/setup.md`](docs/setup.md)) |
+| `bash setups/setup-{unix,windows}-with-docker.sh` | Sobe o app do zero em container (`infra/`) |

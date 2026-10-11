@@ -45,7 +45,7 @@ feat(api)!: require project token on POST /api/v1/links
 
 - Versão estável exata em `package.json` (sem `^`, sem `rc`/`beta`/`canary`).
 - Gerenciador: Bun. Lockfile `bun.lock` versionado; instale com `bun install --frozen-lockfile`.
-- Imagem Docker com tag fixa (`oven/bun:1.4.2-slim`).
+- Imagem Docker com tag fixa (`oven/bun:1.4.2-slim` em `infra/Dockerfile`), nunca `latest`.
 - Dependência nova precisa de aprovação do dev.
 
 ## Código
