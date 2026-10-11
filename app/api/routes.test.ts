@@ -2,6 +2,7 @@
 // /link and /api/links use next/headers and after(): they are covered end to end by qa.ts.
 import { afterEach, describe, expect, test } from "bun:test";
 import { GET as cron } from "@/app/api/cron/health/route";
+import { GET as weekly } from "@/app/api/cron/weekly/route";
 import { POST as registerLinks, PUT as syncLinks } from "@/app/api/v1/links/route";
 import { listLinks, rotateApiToken, upsertProducts } from "@/lib/data";
 import { createProject, mockFetch } from "@/test/helpers";
@@ -252,5 +253,33 @@ describe("PUT /api/v1/links", () => {
 		expect(res.status).toBe(207);
 		expect(((await res.json()) as { errors: string[] }).errors).toHaveLength(1);
 		expect(await own()).toHaveLength(1);
+	});
+});
+
+describe("GET /api/cron/weekly", () => {
+	const call = (authorization?: string): Promise<Response> =>
+		weekly(new Request("http://localhost/api/cron/weekly", { headers: authorization ? { authorization } : {} }));
+
+	test("rejects a missing or wrong secret without sending anything", async () => {
+		const mocked = mockFetch(() => ({ status: 200 }));
+		restore = mocked.restore;
+		for (const header of [undefined, "Bearer wrong", "test-cron-secret", "Bearer "])
+			expect((await call(header)).status).toBe(401);
+		expect(mocked.telegram).toHaveLength(0);
+	});
+
+	test("with the right secret sends one report with every project", async () => {
+		const mocked = mockFetch(() => ({ status: 200 }));
+		restore = mocked.restore;
+		const project = await createProject();
+
+		const res = await call("Bearer test-cron-secret");
+		expect(res.status).toBe(200);
+		const body = (await res.json()) as { days: number; projects: { name: string; clicks: number }[] };
+		expect(body.days).toBe(7);
+		expect(body.projects.find((row) => row.name === project.name)).toEqual({ name: project.name, clicks: 0 });
+		expect(mocked.telegram).toHaveLength(1);
+		expect(mocked.telegram[0]?.text).toContain("📊 Cliques nos últimos 7 dias");
+		expect(mocked.telegram[0]?.text).toContain(`• ${project.name}: 0`);
 	});
 });

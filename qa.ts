@@ -184,6 +184,7 @@ async function suiteAuthorization(anon: APIRequestContext): Promise<void> {
 		const expectations: Record<string, () => Promise<number>> = {
 			"/api/links": async () => (await anon.get("/api/links")).status(),
 			"/api/cron/health": async () => (await anon.get("/api/cron/health")).status(),
+			"/api/cron/weekly": async () => (await anon.get("/api/cron/weekly")).status(),
 			"/api/v1/links": async () =>
 				(await anon.post("/api/v1/links", { data: { externalId: "x", links: [] } })).status(),
 			"/api/auth/[...all]": async () => (await anon.get("/api/auth/list-sessions")).status(),

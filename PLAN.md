@@ -11,7 +11,7 @@ Decisões e motivos: [`docs/brainstorming.md`](docs/brainstorming.md). Mapa do c
 
 ## Estado atual
 
-- **Versão:** 5.2.0 em `main`, repositório `AlexGalhardo/links.example.com` (histórico recriado em 2026-10-11). Cada commit enviado ao remoto vira uma release com as notas do `CHANGELOG.md`.
+- **Versão:** 5.3.0 em `main`, repositório `AlexGalhardo/links.example.com` (histórico recriado em 2026-10-11). Cada commit enviado ao remoto vira uma release com as notas do `CHANGELOG.md`.
 - **Validado localmente (2026-10-10):** `bun run ci` (typecheck, lint, 45 testes unitários e de integração, build), `bun qa.ts` (96 checks em 2026-10-11), `setups/unix.sh` e `setups/windows.ps1` de ponta a ponta em clone limpo, Docker com QA no container.
 - **Produção:** `https://links.example.com` (projeto Vercel `links-example-com`, deploy pelo CLI `vercel deploy --prod`). Banco Turso novo criado pelo Vercel Marketplace em 2026-10-11, com as migrations da v5 e a seed (admin + projeto EletroRadar, 381 links). Os dados da v4 não foram migrados.
 - **Contrato com os sites:** [`docs/api.md`](docs/api.md). Os sites sincronizam o catálogo no build com `PUT /api/v1/links` e apontam os botões para `/link?id=&store=`.

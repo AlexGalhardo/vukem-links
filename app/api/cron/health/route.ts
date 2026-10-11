@@ -1,14 +1,10 @@
-import { timingSafeEqual } from "node:crypto";
+import { isCronRequest } from "@/lib/cron";
 import { checkLinks } from "@/lib/health";
 
 export const maxDuration = 300;
 
-// Vercel Cron sends `Authorization: Bearer $CRON_SECRET` (see vercel.json).
+// Hourly health check of the links longest without one (see vercel.json). Links that die are reported on Telegram.
 export async function GET(request: Request): Promise<Response> {
-	const secret = process.env.CRON_SECRET;
-	const given = Buffer.from(request.headers.get("authorization") ?? "");
-	const expected = Buffer.from(`Bearer ${secret}`);
-	if (!secret || given.length !== expected.length || !timingSafeEqual(given, expected))
-		return Response.json({ error: "unauthorized" }, { status: 401 });
+	if (!isCronRequest(request)) return Response.json({ error: "unauthorized" }, { status: 401 });
 	return Response.json(await checkLinks());
 }

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.3.0] - 2026-10-11
+
+### Added
+
+- Telegram message for every human click that was redirected to a store: project, time (Brasília), product, page and destination.
+- Weekly click report on Telegram, every Sunday at 17:00 (Brasília): clicks of the last 7 days per project (`/api/cron/weekly`).
+
+### Changed
+
+- The link health check runs every hour instead of once a day; a link that dies is still reported on Telegram.
+
 ## [5.2.0] - 2026-10-11
 
 ### Added
@@ -86,7 +97,8 @@ Rewrite around three questions: is the link alive, where is it, and how many cli
 - Security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`); `X-Powered-By` removed.
 - Type errors no longer ignored at build time (`ignoreBuildErrors` removed).
 
-[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v5.2.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v5.3.0...HEAD
+[5.3.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.2.0...v5.3.0
 [5.2.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.1.0...v5.2.0
 [5.1.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.0.0...v5.1.0
 [5.0.0]: https://github.com/AlexGalhardo/links.example.com/releases/tag/v5.0.0

@@ -30,7 +30,7 @@ unknown ──ok──> alive ──3 falhas seguidas──> dead ──ok──
 
 | Gatilho | Alcance |
 | --- | --- |
-| Vercel Cron, diário 09:00 UTC (`/api/cron/health`) | Os 400 links há mais tempo sem checagem |
+| Vercel Cron, de hora em hora (`/api/cron/health`) | Os 400 links há mais tempo sem checagem |
 | Botão "Checar próximo lote" (tabela) | Idem |
 | Seleção na tabela + "Checar" | Os links selecionados |
 | "Checar agora" no detalhe do link | Aquele link |

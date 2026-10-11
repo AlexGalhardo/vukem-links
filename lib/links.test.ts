@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	classifyProbe,
+	clickMessage,
 	DEAD_AFTER_FAILURES,
 	detectStore,
 	isPublicHttpUrl,
@@ -9,6 +10,7 @@ import {
 	pickLink,
 	productInput,
 	toDevice,
+	weeklyReportMessage,
 } from "./links";
 
 const URL_ML = "https://mercadolivre.com/sec/1BXJGku";
@@ -143,5 +145,51 @@ describe("parseImport", () => {
 		expect(() =>
 			parseImport(JSON.stringify([{ externalId: "p", links: [{ url: "javascript:alert(1)" }] }])),
 		).toThrow();
+	});
+});
+
+describe("clickMessage", () => {
+	test("names the project, the Brasília time, the product, the page and the destination", () => {
+		const text = clickMessage({
+			project: "EletroRadar",
+			product: "Airfryer Arno",
+			at: new Date("2026-10-11T20:03:21Z"),
+			pageUrl: "https://example.com/melhor-airfryer",
+			targetUrl: "https://meli.la/abc",
+		});
+		expect(text.split("\n")).toEqual([
+			"🔗 Clique: EletroRadar",
+			"11/10/2026, 17:03:21",
+			"Airfryer Arno",
+			"Página: https://example.com/melhor-airfryer",
+			"Destino: https://meli.la/abc",
+		]);
+	});
+});
+
+describe("weeklyReportMessage", () => {
+	test("lists projects by clicks, keeps the ones with none and ends with the total", () => {
+		const text = weeklyReportMessage(
+			[
+				{ name: "Tudo Hardware", clicks: 3 },
+				{ name: "Novo", clicks: 0 },
+				{ name: "EletroRadar", clicks: 12 },
+			],
+			7,
+		);
+		expect(text.split("\n")).toEqual([
+			"📊 Cliques nos últimos 7 dias",
+			"",
+			"• EletroRadar: 12",
+			"• Tudo Hardware: 3",
+			"• Novo: 0",
+			"",
+			"Total: 15",
+		]);
+	});
+
+	test("says so when there is no project", () => {
+		expect(weeklyReportMessage([], 7)).toContain("Nenhum projeto cadastrado.");
+		expect(weeklyReportMessage([], 7)).toContain("Total: 0");
 	});
 });

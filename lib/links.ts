@@ -88,6 +88,49 @@ export function nextHealth(current: HealthState, result: CheckResult): HealthSta
 	return { status: consecutiveFailures >= DEAD_AFTER_FAILURES ? "dead" : current.status, consecutiveFailures };
 }
 
+const BRASILIA = new Intl.DateTimeFormat("pt-BR", {
+	timeZone: "America/Sao_Paulo",
+	dateStyle: "short",
+	timeStyle: "medium",
+});
+
+export interface ClickNotice {
+	project: string;
+	product: string;
+	at: Date;
+	/** Page the button belongs to. */
+	pageUrl: string;
+	/** Store address the visitor was redirected to. */
+	targetUrl: string;
+}
+
+/** Telegram text for one redirected click. */
+export function clickMessage({ project, product, at, pageUrl, targetUrl }: ClickNotice): string {
+	return [`🔗 Clique: ${project}`, BRASILIA.format(at), product, `Página: ${pageUrl}`, `Destino: ${targetUrl}`].join(
+		"\n",
+	);
+}
+
+export interface ProjectClicks {
+	name: string;
+	clicks: number;
+}
+
+/** Telegram text for the weekly report: projects by clicks, then the total. */
+export function weeklyReportMessage(projects: ProjectClicks[], days: number): string {
+	const total = projects.reduce((sum, project) => sum + project.clicks, 0);
+	const lines = [...projects]
+		.sort((a, b) => b.clicks - a.clicks || a.name.localeCompare(b.name))
+		.map((project) => `• ${project.name}: ${project.clicks}`);
+	return [
+		`📊 Cliques nos últimos ${days} dias`,
+		"",
+		...(lines.length ? lines : ["Nenhum projeto cadastrado."]),
+		"",
+		`Total: ${total}`,
+	].join("\n");
+}
+
 export type Device = "desktop" | "mobile" | "tablet";
 
 export function toDevice(type: string | undefined): Device {

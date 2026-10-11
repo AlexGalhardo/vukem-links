@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import {
 	type AffiliateLink,
@@ -13,7 +13,7 @@ import {
 	projects,
 } from "@/db/schema";
 import { db } from "@/lib/db";
-import { detectStore, nameFromExternalId, type ProductInput, sameHost } from "@/lib/links";
+import { detectStore, nameFromExternalId, type ProductInput, type ProjectClicks, sameHost } from "@/lib/links";
 
 const DAY = 86_400_000;
 const humanClick = eq(clickEvents.isBot, false);
@@ -174,6 +174,22 @@ export async function syncProducts(project: Project, inputs: ProductInput[]): Pr
 	for (const batch of chunks(staleLinks)) await db.delete(affiliateLinks).where(inArray(affiliateLinks.id, batch));
 	summary.linksRemoved = staleLinks.length;
 	return summary;
+}
+
+/** Human clicks that reached a store in the last `days` days, for every project (including the ones with none). */
+export async function getClicksByProject(days: number): Promise<ProjectClicks[]> {
+	const since = new Date(Date.now() - days * DAY);
+	const counted = await db
+		.select({ projectId: products.projectId, clicks: sql<number>`count(*)` })
+		.from(clickEvents)
+		.innerJoin(products, eq(products.id, clickEvents.productId))
+		.where(and(humanClick, isNotNull(clickEvents.linkId), gte(clickEvents.createdAt, since)))
+		.groupBy(products.projectId);
+	const byProject = new Map(counted.map((row) => [row.projectId, row.clicks]));
+	return (await db.select({ id: projects.id, name: projects.name }).from(projects)).map((project) => ({
+		name: project.name,
+		clicks: byProject.get(project.id) ?? 0,
+	}));
 }
 
 export interface LinkRow {

@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import { affiliateLinks, clickEvents, linkChecks, products, projects } from "@/db/schema";
 import {
+	getClicksByProject,
 	getLinkDetail,
 	getStats,
 	hashToken,
@@ -270,6 +271,18 @@ describe("getStats", () => {
 		const empty = await createProject();
 		const stats = await getStats({ projectId: empty.id });
 		expect(stats).toMatchObject({ clicks: 0, botClicks: 0, lostClicks: 0, legacyClicks: 0, byDevice: [] });
+	});
+});
+
+describe("getClicksByProject", () => {
+	test("counts human clicks that reached a store inside the window, per project", async () => {
+		const { project } = await seedClicks();
+		const idle = await createProject();
+		const week = await getClicksByProject(7);
+		// 4 on the first link + 1 on the second; the bot, the click without a link and the 40-day-old one are out.
+		expect(week.find((row) => row.name === project.name)).toEqual({ name: project.name, clicks: 5 });
+		expect(week.find((row) => row.name === idle.name)).toEqual({ name: idle.name, clicks: 0 });
+		expect((await getClicksByProject(60)).find((row) => row.name === project.name)?.clicks).toBe(6);
 	});
 });
 

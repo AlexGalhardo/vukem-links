@@ -2,7 +2,7 @@
 
 Dashboard pessoal para gerenciar links de afiliado usados em vários projetos.
 
-- **O link ainda existe?** Checagem diária de saúde, com fallback automático para o próximo link vivo.
+- **O link ainda existe?** Checagem de saúde de hora em hora, com fallback automático para o próximo link vivo.
 - **Onde ele está?** Cada link pertence a um produto (página) de um projeto.
 - **Quantos cliques?** Cada clique registra device, sistema, navegador, país e página de origem.
 

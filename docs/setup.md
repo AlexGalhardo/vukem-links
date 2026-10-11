@@ -34,8 +34,8 @@ bun run dev
 | `BETTER_AUTH_SECRET` | Sim | Assina sessões. 32+ bytes aleatórios |
 | `BETTER_AUTH_URL` | Sim | URL pública do app |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Para `db:seed` | Conta admin (senha com 8+ caracteres) |
-| `CRON_SECRET` | Em produção | Protege `/api/cron/health` |
-| `TELEGRAM_BOT_HTTP_TOKEN`, `TELEGRAM_BOT_CHANNEL_ID` | Não | Alertas de link morto |
+| `CRON_SECRET` | Em produção | Protege `/api/cron/health` e `/api/cron/weekly` |
+| `TELEGRAM_BOT_HTTP_TOKEN`, `TELEGRAM_BOT_CHANNEL_ID` | Não | Bot do Telegram: alerta de link morto, log de cada clique redirecionado e relatório semanal de cliques |
 
 ## Docker
 
@@ -58,4 +58,4 @@ Para trocar credenciais, crie `setups/.env` (ignorado pelo git) com `BETTER_AUTH
 2. Aplique as migrations no Turso: `bun run db:migrate` com `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN` de produção.
 3. Vindo da v4: siga [`migration-v4.md`](migration-v4.md).
 4. Crie o admin: `bun run db:seed` (também importa `seed.json`; produtos existentes são ignorados).
-5. O cron de saúde está em `vercel.json` (diário, 09:00 UTC).
+5. Os crons estão em `vercel.json`: saúde dos links de hora em hora e relatório semanal de cliques no domingo às 20:00 UTC (17h de Brasília). Cron com frequência maior que diária exige o plano Pro da Vercel.

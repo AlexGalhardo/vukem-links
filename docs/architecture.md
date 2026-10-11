@@ -54,5 +54,6 @@ Ver [`health-check.md`](health-check.md). Resumo: `lib/health.ts` faz o fetch, `
 ## Limites conhecidos
 
 - `/api/links` devolve todos os links. Passar a paginar no servidor acima de ~5 mil.
-- Um cron diário checa 400 links (`BATCH` em `lib/health.ts`).
+- Um cron de hora em hora checa 400 links (`BATCH` em `lib/health.ts`).
+- Cada clique humano redirecionado para uma loja gera uma mensagem no Telegram; um cron semanal (domingo, 17h de Brasília) envia o total de cliques por projeto dos últimos 7 dias (`/api/cron/weekly`).
 - Estatísticas cobrem os últimos 30 dias; o total de cliques é de todo o período.

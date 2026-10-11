@@ -17,7 +17,9 @@ Next.js 16 (App Router, Server Components) · React 19 · TypeScript 7 strict ·
 | `app/actions.ts` | Todas as server actions (mutações do dashboard) |
 | `app/api/links` | Lista de links para a tabela (TanStack Query) |
 | `app/api/v1/links` | API por token de projeto: `PUT` sincroniza o catálogo inteiro (script de build dos sites), `POST` acrescenta |
-| `app/api/cron/health` | Checagem diária de saúde (Vercel Cron) |
+| `app/api/cron/health` | Checagem de saúde de hora em hora (Vercel Cron) |
+| `app/api/cron/weekly` | Relatório semanal de cliques por projeto no Telegram (Vercel Cron) |
+| `lib/telegram.ts` | `notify`: alerta de link morto, log de cada clique redirecionado, relatório semanal |
 | `lib/links.ts` | Regras puras: escolha do link, classificação da checagem, validação, importação |
 | `lib/data.ts` | Leituras e a única escrita de produtos/links (`upsertProducts`) |
 | `lib/health.ts` | Checagem de saúde (I/O) |

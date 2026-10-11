@@ -1,8 +1,8 @@
 import { asc, eq } from "drizzle-orm";
 import { after, type NextRequest, NextResponse, userAgent } from "next/server";
-import { affiliateLinks, clickEvents, products } from "@/db/schema";
+import { affiliateLinks, clickEvents, products, projects } from "@/db/schema";
 import { db } from "@/lib/db";
-import { pickLink, toDevice } from "@/lib/links";
+import { clickMessage, pickLink, toDevice } from "@/lib/links";
 import { notify } from "@/lib/telegram";
 
 // Public affiliate redirect: /link?id=<product externalId>[&store=<store>]. URL shape is frozen, projects already link to it.
@@ -35,7 +35,21 @@ export async function GET(request: NextRequest): Promise<Response> {
 	// Recorded after the response so tracking never delays (or breaks) the redirect.
 	after(async () => {
 		await db.insert(clickEvents).values(event);
-		if (!link && !ua.isBot) await notify(`⚠️ Clique sem link vivo: ${product.name}\n${product.pageUrl}`);
+		if (ua.isBot) return;
+		if (!link) return notify(`⚠️ Clique sem link vivo: ${product.name}\n${product.pageUrl}`);
+		const [project] = await db
+			.select({ name: projects.name })
+			.from(projects)
+			.where(eq(projects.id, product.projectId));
+		await notify(
+			clickMessage({
+				project: project?.name ?? "?",
+				product: product.name,
+				at: new Date(),
+				pageUrl: product.pageUrl,
+				targetUrl: link.url,
+			}),
+		);
 	});
 
 	return NextResponse.redirect(link?.url ?? product.pageUrl, {

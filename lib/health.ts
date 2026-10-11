@@ -7,7 +7,7 @@ import { notify } from "@/lib/telegram";
 const TIMEOUT_MS = 8000;
 const CONCURRENCY = 20;
 // ponytail: one cron run covers BATCH links (oldest check first), so a full sweep of N links takes
-// N/BATCH days. Worst case BATCH/CONCURRENCY*TIMEOUT = 160s, inside the 300s function limit.
+// N/BATCH hours (the cron is hourly). Worst case BATCH/CONCURRENCY*TIMEOUT = 160s, inside the 300s function limit.
 // Move to Vercel Queues/Workflows if the catalogue outgrows a few thousand links.
 export const BATCH = 400;
 
