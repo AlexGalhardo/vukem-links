@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.env*
+!.env.example
+*.db
+*.db-*
+_legacy
+.claude
+docs
+qa-report.json
+questions-to-dev.md

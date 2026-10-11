@@ -1,0 +1,2 @@
+# Same gate as .github/workflows/ci.yml, run locally while Actions is disabled.
+bun run ci

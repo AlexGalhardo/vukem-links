@@ -1,0 +1,48 @@
+{
+  "name": "links-afiliados",
+  "version": "5.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "bun test lib",
+    "ci": "bun run typecheck && bun run lint && bun run test && bun run build",
+    "qa": "bun qa.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun scripts/migrate.ts",
+    "db:seed": "bun scripts/seed.ts",
+    "db:migrate-v4": "bun scripts/migrate-v4.ts",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@base-ui/react": "1.9.0",
+    "@libsql/client": "0.18.0",
+    "better-auth": "1.7.7",
+    "drizzle-orm": "0.45.4",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "@tanstack/react-query": "5.104.1",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@commitlint/cli": "21.2.3",
+    "@commitlint/config-conventional": "21.2.3",
+    "@playwright/test": "1.64.0",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/bun": "1.4.2",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "drizzle-kit": "0.31.11",
+    "husky": "9.1.7",
+    "tailwindcss": "4.3.3",
+    "typescript": "7.0.2"
+  }
+}

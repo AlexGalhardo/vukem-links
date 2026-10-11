@@ -1,0 +1,17 @@
+{
+	// Rules: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+	"config": {
+		"default": true,
+		// Technical documentation with tables and long URLs: no line width limit.
+		"MD013": false,
+		// The README uses HTML for the centered header and the badges.
+		"MD033": { "allowed_elements": ["h1", "p", "a", "img", "br", "details", "summary"] },
+		"MD041": false,
+		// The block that `next dev` rewrites in AGENTS.md/CLAUDE.md brings a second level-1 heading.
+		"MD025": false,
+		// The changelog (Keep a Changelog) repeats "Added", "Fixed" etc. in every version.
+		"MD024": { "siblings_only": true }
+	},
+	"globs": ["*.md", "docs/**/*.md", ".github/**/*.md"],
+	"ignores": ["node_modules", ".claude", "graphify-out", ".next"]
+}

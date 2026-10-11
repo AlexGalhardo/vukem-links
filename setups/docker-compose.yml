@@ -1,0 +1,22 @@
+# Local test stack: the app plus a SQLite file in a named volume. Not a production setup.
+name: links-afiliados
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: setups/Dockerfile
+    ports:
+      # Host port: APP_PORT=3300 ./setups/docker.sh when 3000 is taken.
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      TURSO_DATABASE_URL: file:/data/local.db
+      BETTER_AUTH_URL: http://localhost:${APP_PORT:-3000}
+      # Local-only defaults. Override in setups/.env (git-ignored) for anything reachable by others.
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-local-docker-secret-change-me-0123456789}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin-local-123}
+      CRON_SECRET: ${CRON_SECRET:-local-cron-secret}
+    volumes:
+      - data:/data
+volumes:
+  data:

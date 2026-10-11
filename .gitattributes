@@ -1,0 +1,4 @@
+# Biome and .editorconfig expect LF; without this, autocrlf checkouts on Windows fail the lint gate.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
