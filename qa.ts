@@ -128,7 +128,8 @@ async function redirectTarget(
 ): Promise<string> {
 	const res = await api.get(`/link?id=${encodeURIComponent(externalId)}`, {
 		maxRedirects: 0,
-		headers: { "User-Agent": userAgent, ...(referer ? { Referer: referer } : {}) },
+		// Vercel sets this header at the edge in production; locally the QA plays that role.
+		headers: { "User-Agent": userAgent, "x-vercel-ip-country": "BR", ...(referer ? { Referer: referer } : {}) },
 	});
 	return `${res.status()} ${res.headers().location ?? ""}`;
 }
@@ -210,7 +211,8 @@ async function suiteAuthorization(anon: APIRequestContext): Promise<void> {
 async function login(page: Page, email: string, password: string): Promise<void> {
 	await page.goto("/login");
 	await page.getByLabel("E-mail").fill(email);
-	await page.getByLabel("Senha").fill(password);
+	// exact: the show/hide toggle is labelled "Mostrar senha", which a substring match would also hit.
+	await page.getByLabel("Senha", { exact: true }).fill(password);
 	await page.getByRole("button", { name: "Entrar" }).click();
 }
 
@@ -316,6 +318,12 @@ async function suiteRedirect(page: Page, api: APIRequestContext, anon: APIReques
 			(await page.getByText("someone@example.com").count()) === 0,
 		);
 		assert("device breakdown shows Mobile", (await page.getByText("Mobile", { exact: true }).count()) > 0);
+		assert("country comes from the edge header", (await page.getByText("BR", { exact: true }).count()) > 0);
+		assert(
+			"OS and browser are parsed from the user agent",
+			(await page.getByText("iOS", { exact: true }).count()) > 0 &&
+				(await page.getByText("Mobile Safari", { exact: true }).count()) > 0,
+		);
 	});
 
 	async function killLink(url: string): Promise<void> {
@@ -431,8 +439,146 @@ async function suiteProjectApi(page: Page, api: APIRequestContext, anon: APIRequ
 	});
 }
 
+async function suiteTable(page: Page, api: APIRequestContext): Promise<void> {
+	suite("6. Links table: filters, sorting, bulk actions, pagination");
+	const count = (n: number) => page.getByText(`${n} links`, { exact: true });
+	async function choose(label: string, option: string): Promise<void> {
+		await page.getByRole("combobox", { name: label }).click();
+		await page.getByRole("option", { name: option, exact: true }).click();
+	}
+	const firstProduct = async (): Promise<string> => (await page.locator("tbody tr a").first().textContent()) ?? "";
+
+	await guarded("filters", async () => {
+		await page.goto(`/projects/${PROJECT.slug}`);
+		const total = (await ownLinks(api)).length;
+		await count(total).waitFor();
+		await choose("Status", "Morto");
+		await count(1).waitFor();
+		assert("status filter keeps only dead links", (await firstProduct()) === XSS_NAME);
+		await choose("Status", "Todo status");
+		await count(total).waitFor();
+		await choose("Loja", "amazon");
+		await count(1).waitFor();
+		record("PASS", "store filter keeps only that store", "");
+		await choose("Loja", "Toda loja");
+		await count(total).waitFor();
+		record("PASS", "clearing a filter restores the full list", "");
+	});
+
+	await guarded("sorting", async () => {
+		const names = (await ownLinks(api)).map((l) => l.productName).sort((a, b) => a.localeCompare(b));
+		const header = page.getByRole("columnheader", { name: /Produto/ });
+		await header.getByRole("button").click();
+		assert("first click sorts descending", (await header.getAttribute("aria-sort")) === "descending");
+		assert(
+			"descending order puts the last name first",
+			(await firstProduct()) === names.at(-1),
+			await firstProduct(),
+		);
+		await header.getByRole("button").click();
+		assert("second click sorts ascending", (await header.getAttribute("aria-sort")) === "ascending");
+		assert("ascending order puts the first name first", (await firstProduct()) === names[0], await firstProduct());
+	});
+
+	await guarded("bulk actions", async () => {
+		const total = (await ownLinks(api)).length;
+		await page.getByRole("checkbox", { name: "Selecionar página" }).check();
+		await page.getByText(`${total} selecionados`).waitFor();
+		record("PASS", "select-all selects every visible row", "");
+		await page.getByRole("checkbox", { name: "Selecionar página" }).uncheck();
+		assert("unchecking clears the selection", (await page.getByText("selecionados").count()) === 0);
+
+		const search = page.getByRole("searchbox", { name: "Buscar links" });
+		await search.fill(".invalid");
+		await count(2).waitFor();
+		await page.getByRole("checkbox", { name: "Selecionar página" }).check();
+		await page.getByRole("button", { name: "Checar", exact: true }).click();
+		await page.getByText("2 checados: 0 ok, 2 falhas, 0 inconclusivos").waitFor({ timeout: 30_000 });
+		record("PASS", "bulk health check runs on the selected links only", "");
+
+		await search.fill("amzn.to");
+		await count(1).waitFor();
+		await page.getByRole("checkbox", { name: "Selecionar página" }).check();
+		await page.getByRole("button", { name: "Excluir", exact: true }).click();
+		await page.getByRole("alertdialog").getByRole("button", { name: "Excluir", exact: true }).click();
+		await page.getByText("Links excluídos").waitFor();
+		assert("bulk delete removes the selected link", (await ownLinks(api)).length === total - 1);
+	});
+
+	await guarded("pagination", async () => {
+		const all = ((await (await api.get("/api/links")).json()) as LinkRow[]).length;
+		if (all <= 50) {
+			record("SKIP", "pagination", `needs more than 50 links, found ${all} (run db:seed)`);
+			return;
+		}
+		const pages = Math.ceil(all / 50);
+		await page.goto("/links");
+		await page.getByText(`1 / ${pages}`).waitFor();
+		assert("a page shows 50 rows", (await page.locator("tbody tr").count()) === 50);
+		const before = await firstProduct();
+		assert(
+			"Anterior is disabled on the first page",
+			await page.getByRole("button", { name: "Anterior" }).isDisabled(),
+		);
+		await page.getByRole("button", { name: "Próxima" }).click();
+		await page.getByText(`2 / ${pages}`).waitFor();
+		assert("the next page shows different rows", (await firstProduct()) !== before);
+		await page.getByRole("searchbox", { name: "Buscar links" }).fill(PROJECT.slug);
+		await page.getByText(`${(await ownLinks(api)).length} links`, { exact: true }).waitFor();
+		assert("filtering goes back to the first page", (await page.locator("tbody tr").count()) > 0);
+	});
+}
+
+async function suiteLayout(context: BrowserContext, baseUrl: string): Promise<void> {
+	suite("7. Layout: mobile width and color scheme");
+	const browser = context.browser();
+	if (!browser) return record("SKIP", "layout", "no browser handle");
+	const storageState = await context.storageState();
+	const paths = ["/", "/links", "/projects", `/projects/${PROJECT.slug}`];
+
+	await guarded("mobile width", async () => {
+		const mobile = await browser.newContext({
+			baseURL: baseUrl,
+			storageState,
+			viewport: { width: 390, height: 800 },
+		});
+		const page = await mobile.newPage();
+		for (const path of paths) {
+			await page.goto(path);
+			await page.getByRole("button", { name: "Menu" }).waitFor();
+			const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+			assert(`${path} has no horizontal page scroll at 390px`, overflow <= 0, `overflows by ${overflow}px`);
+		}
+		const nav = page.getByRole("navigation", { name: "Principal" });
+		assert("main nav is collapsed at 390px", !(await nav.isVisible()));
+		await page.getByRole("button", { name: "Menu" }).click();
+		assert("hamburger opens the main nav", await nav.isVisible());
+		await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+		const top = await page.locator("header").evaluate((el) => el.getBoundingClientRect().top);
+		assert("navbar stays at the top after scrolling", top === 0, `top=${top}`);
+		await mobile.close();
+	});
+
+	await guarded("color scheme", async () => {
+		// Light OS preference on purpose: dark must be the default regardless of it.
+		const themed = await browser.newContext({ baseURL: baseUrl, storageState, colorScheme: "light" });
+		const page = await themed.newPage();
+		const scheme = (): Promise<string> =>
+			page.evaluate(() => getComputedStyle(document.documentElement).colorScheme);
+		const background = (): Promise<string> => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+		await page.goto("/links");
+		const dark = await background();
+		assert("dark is the default theme", (await scheme()) === "dark", await scheme());
+		await page.getByRole("button", { name: "Alternar tema" }).click();
+		assert("theme toggle switches to light", (await scheme()) === "light" && (await background()) !== dark);
+		await page.reload();
+		assert("chosen theme survives a reload", (await scheme()) === "light", await scheme());
+		await themed.close();
+	});
+}
+
 async function suiteCleanup(page: Page, api: APIRequestContext, anon: APIRequestContext): Promise<void> {
-	suite("6. Deletion and cleanup");
+	suite("8. Deletion and cleanup");
 	await guarded("delete link and project", async () => {
 		const before = await ownLinks(api);
 		await page.goto(`/links/${before[0]?.id}`);
@@ -462,7 +608,7 @@ async function suiteAuth(
 	email: string,
 	password: string,
 ): Promise<void> {
-	suite("7. Auth");
+	suite("10. Auth");
 	await guarded("session and logout", async () => {
 		const cookie = (await context.cookies()).find((c) => c.name.includes("session_token"));
 		assert("session cookie is HttpOnly", cookie?.httpOnly === true, `cookie=${cookie?.name}`);
@@ -538,11 +684,18 @@ async function main(): Promise<void> {
 				"check --admin-email/--admin-password and `bun run db:seed`",
 			)
 		) {
+			// Presence only: clicking it would probe every real store URL in the database.
+			assert(
+				"overview offers checking every link at once",
+				await page.getByRole("button", { name: "Checar todos os links" }).isVisible(),
+			);
 			await suiteCrud(page, context.request);
 			await suiteRedirect(page, context.request, anon);
 			await suiteProjectApi(page, context.request, anon);
+			await suiteTable(page, context.request);
+			await suiteLayout(context, baseUrl);
 			await suiteCleanup(page, context.request, anon);
-			suite("8. Robustness");
+			suite("9. Robustness");
 			assert(
 				"unknown link id renders a 404 page",
 				(await context.request.get("/links/does-not-exist")).status() === 404,

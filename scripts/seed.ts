@@ -1,4 +1,4 @@
-// Idempotent local bootstrap: admin account + the produtostech project loaded from seed.json.
+// Idempotent local bootstrap: admin account + the eletroradar project loaded from seed.json.
 import { readFileSync } from "node:fs";
 import { eq } from "drizzle-orm";
 import { projects } from "@/db/schema";
@@ -30,12 +30,12 @@ if (await ctx.internalAdapter.findUserByEmail(email)) {
 	console.log(`Admin ${email} created.`);
 }
 
-const slug = "produtostech";
+const slug = "eletroradar";
 let [project] = await db.select().from(projects).where(eq(projects.slug, slug));
 if (!project)
 	[project] = await db
 		.insert(projects)
-		.values({ name: "Produtos Tech", slug, baseUrl: "https://app.produtostech.com.br" })
+		.values({ name: "EletroRadar", slug, baseUrl: "https://example.com" })
 		.returning();
 if (!project) throw new Error("Could not create the seed project");
 

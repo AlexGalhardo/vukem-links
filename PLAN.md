@@ -11,8 +11,8 @@ Decisões e motivos: [`docs/brainstorming.md`](docs/brainstorming.md). Mapa do c
 
 ## Estado atual
 
-- **Versão:** 5.0.0 na branch `feat/v5-rewrite`, não mergeada nem deployada.
-- **Validado localmente (2026-10-10):** `bun run ci` (typecheck, lint, 15 testes, build) e `bun qa.ts` (69 checks).
+- **Versão:** 5.1.0 em `main`, repositório `AlexGalhardo/links.example.com` (histórico recriado em 2026-10-11). Cada commit enviado ao remoto vira uma release com as notas do `CHANGELOG.md`.
+- **Validado localmente (2026-10-10):** `bun run ci` (typecheck, lint, 45 testes unitários e de integração, build), `bun qa.ts` (96 checks em 2026-10-11), `setups/unix.sh` e `setups/windows.ps1` de ponta a ponta em clone limpo, Docker com QA no container.
 - **Produção ainda roda a v4.** O banco Turso de produção não foi tocado.
 
 ## Fases da v5
@@ -32,10 +32,9 @@ Decisões e motivos: [`docs/brainstorming.md`](docs/brainstorming.md). Mapa do c
 
 Detalhes e contexto em `questions-to-dev.md` (raiz, fora do git).
 
-- [ ] Revisar e apagar `_legacy/` (código v4 movido, não deletado).
+- [x] Revisar e apagar `_legacy/` (removido em 5.1.0).
 - [ ] Rodar a migração no Turso de produção: `bun run db:migrate` e depois `bun run db:migrate-v4` ([`docs/migration-v4.md`](docs/migration-v4.md)).
 - [ ] Definir na Vercel: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CRON_SECRET`; rodar `bun run db:seed` contra produção para criar o admin.
-- [ ] Merge de `feat/v5-rewrite` em `main` e deploy.
 - [ ] Reativar o gatilho do CI quando o billing do GitHub Actions estiver resolvido ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 - [ ] Ajustar `SECURITY.md` (veio de outro projeto; foi adaptado, confirme o canal de contato).
 
@@ -54,9 +53,9 @@ Detalhes e contexto em `questions-to-dev.md` (raiz, fora do git).
 | --- | --- |
 | `bun run dev` | Servidor de desenvolvimento |
 | `bun run ci` | Typecheck + lint + testes + build (mesmo gate do `pre-push`) |
-| `bun run test` | Testes unitários (`lib/*.test.ts`) |
+| `bun run test` | Testes unitários e de integração (`**/*.test.ts`, banco SQLite descartável) |
 | `bun qa.ts` | QA end-to-end contra o app rodando ([`docs/qa.md`](docs/qa.md)) |
 | `bun run db:generate` | Gera migration a partir de `db/schema.ts` |
 | `bun run db:migrate` | Aplica migrations |
-| `bun run db:seed` | Cria admin + projeto de exemplo a partir de `seed.json` |
+| `bun run db:seed` | Cria admin + projeto EletroRadar a partir de `seed.json` |
 | `setups/unix.sh`, `setups/windows.ps1`, `setups/docker.sh` | Sobe o app do zero ([`docs/setup.md`](docs/setup.md)) |

@@ -21,7 +21,7 @@ Os scripts são idempotentes: rodar de novo não duplica dados.
 cp .env.example .env        # preencha BETTER_AUTH_SECRET (openssl rand -base64 32)
 bun install --frozen-lockfile
 bun run db:migrate          # cria as tabelas em ./local.db
-bun run db:seed             # admin + projeto "Produtos Tech" a partir de seed.json
+bun run db:seed             # admin + projeto "EletroRadar" a partir de seed.json
 bun run dev
 ```
 

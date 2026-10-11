@@ -1,6 +1,6 @@
 {
   "name": "links-afiliados",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "format": "biome check --write .",
-    "test": "bun test lib",
+    "test": "bun test",
     "ci": "bun run typecheck && bun run lint && bun run test && bun run build",
     "qa": "bun qa.ts",
     "db:generate": "drizzle-kit generate",

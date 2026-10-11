@@ -74,12 +74,21 @@ export function TextField({
 	label,
 	hint,
 	className = "",
+	trailing,
 	...props
-}: ComponentProps<typeof Field.Control> & { label: string; hint?: string }): ReactNode {
+}: ComponentProps<typeof Field.Control> & { label: string; hint?: string; trailing?: ReactNode }): ReactNode {
+	const control = <Field.Control className={`${inputClass} ${trailing ? "pr-8" : ""} ${className}`} {...props} />;
 	return (
 		<Field.Root className="flex flex-col gap-1">
 			<Field.Label className="text-xs font-medium text-muted">{label}</Field.Label>
-			<Field.Control className={`${inputClass} ${className}`} {...props} />
+			{trailing ? (
+				<div className="relative">
+					{control}
+					<div className="absolute inset-y-0 right-0 flex items-center">{trailing}</div>
+				</div>
+			) : (
+				control
+			)}
 			{hint && <Field.Description className="text-xs text-muted">{hint}</Field.Description>}
 			<Field.Error className="text-xs text-bad" />
 		</Field.Root>

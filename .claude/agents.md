@@ -24,9 +24,9 @@ Next.js 16 (App Router, Server Components) · React 19 · TypeScript 7 strict ·
 | `lib/auth.ts`, `lib/session.ts` | Better Auth e `requireSession()` |
 | `components/ui.tsx` | Wrappers de Base UI + `useAction` (mutação via server action) |
 | `db/schema.ts`, `drizzle/` | Schema e migrations versionadas |
+| `**/*.test.ts`, `test/` | Testes unitários e de integração (`bun test`); `test/setup.ts` cria o banco descartável |
 | `qa.ts` | QA end-to-end (Playwright) |
 | `setups/` | Scripts para subir local (Unix, Windows, Docker) |
-| `_legacy/` | Código da v4, fora do build. Não editar; aguardando remoção pelo dev |
 
 ## Regras do projeto
 

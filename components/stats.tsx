@@ -31,7 +31,7 @@ export function Panel({
 	className?: string;
 }): ReactNode {
 	return (
-		<section className={`rounded-lg border border-line bg-panel ${className}`}>
+		<section className={`min-w-0 rounded-lg border border-line bg-panel ${className}`}>
 			{title && (
 				<h2 className="border-b border-line px-3 py-2 text-xs font-semibold text-muted uppercase">{title}</h2>
 			)}
@@ -113,10 +113,10 @@ function Breakdown({
 								className="absolute inset-y-0 left-0 rounded-sm bg-accent/15"
 								style={{ width: `${(item.count / total) * 100}%` }}
 							/>
-							<span className="relative truncate" title={item.key}>
+							<span className="relative min-w-0 truncate" title={item.key}>
 								{labels?.[item.key] ?? item.key}
 							</span>
-							<span className="relative text-muted">
+							<span className="relative shrink-0 text-muted">
 								{fmt(item.count)} · {Math.round((item.count / total) * 100)}%
 							</span>
 						</li>
@@ -138,7 +138,7 @@ export function StatsPanels({ stats }: { stats: Stats }): ReactNode {
 				<Breakdown title="Sistema" items={stats.byOs} />
 				<Breakdown title="Navegador" items={stats.byBrowser} />
 				<Breakdown title="País" items={stats.byCountry} />
-				<div className="md:col-span-2">
+				<div className="min-w-0 md:col-span-2">
 					<Breakdown title="Página de origem" items={stats.byReferer} />
 				</div>
 			</div>

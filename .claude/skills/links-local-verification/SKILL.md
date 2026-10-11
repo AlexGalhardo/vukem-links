@@ -21,9 +21,14 @@ Run the narrowest step while iterating, the whole gate before finishing:
 | Changed | Run |
 | --- | --- |
 | `lib/links.ts` | `bun test lib/links.test.ts` |
+| `lib/data.ts`, `lib/health.ts` | `bun test lib/data.test.ts` / `bun test lib/health.test.ts` |
+| `app/api/cron`, `app/api/v1` | `bun test app/api/routes.test.ts` |
+| `scripts/migrate-v4.ts` | `bun test scripts/migrate-v4.test.ts` |
 | types only | `bun run typecheck` |
 | formatting / imports | `bun run format` (writes fixes), then `bun run lint` |
 | any page, action, route, schema | `bun run ci`, then the QA below |
+
+Integration tests use a throwaway SQLite file created by `test/setup.ts` (preloaded through `bunfig.toml`). They never touch `local.db`. Each test creates its own project with `createProject()` from `test/helpers.ts`; network is replaced with `mockFetch`.
 
 ## End-to-end QA
 
@@ -41,6 +46,7 @@ Admin credentials come from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env` (Bun load
 
 - **429 on login right after a QA run.** The last suite trips the sign-in rate limit on purpose. Wait ~15 s before logging in or re-running.
 - **`no such table`.** The local database is behind: `bun run db:migrate`. To start clean, stop the server and remove `local.db*` (ask the dev first if the file has data they care about).
+- **Login fails on another port.** Better Auth rejects origins that differ from `BETTER_AUTH_URL`. Start with both set: `PORT=3411 BETTER_AUTH_URL=http://localhost:3411 bun run dev`.
 - **Port 3000 busy.** A previous dev server or the Docker stack is still up. `qa.ts` accepts another base URL: `bun qa.ts http://localhost:3001`.
 - **Build fails on type errors in a file you did not touch.** `next build` type-checks every `.ts` in the repo, including `qa.ts` and `scripts/`. `_legacy/` is excluded in `tsconfig.json`.
 - **QA refuses to run.** Non-local hosts need `--allow-remote`. Never point it at production: it writes and deletes data.
@@ -48,4 +54,4 @@ Admin credentials come from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env` (Bun load
 
 ## Reporting
 
-State what ran and the result, e.g. "`bun run ci` passed (15 tests, build ok); `bun qa.ts` 69 passed, 0 failed". If a step was skipped, say which and why.
+State what ran and the result, e.g. "`bun run ci` passed (45 tests, build ok); `bun qa.ts` 91 passed, 0 failed". If a step was skipped, say which and why.

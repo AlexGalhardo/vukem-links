@@ -35,7 +35,7 @@
 ## Processo
 
 - Rota nova em `app/api/` exige entrada em `expectations` no `qa.ts`, senão o QA falha.
+- Mudança em `lib/data.ts` ou `lib/health.ts` vem com teste de integração; regra pura em `lib/links.ts` vem com teste unitário.
 - Dependência nova só com aprovação do dev, em versão estável exata (sem `^`).
 - Concluir tarefa = `bun run ci` verde; se tocou fluxo de usuário, `bun qa.ts` verde também.
 - Atualize `PLAN.md` e `CHANGELOG.md` ao fim de cada conjunto de mudanças.
-- `_legacy/` é somente leitura.

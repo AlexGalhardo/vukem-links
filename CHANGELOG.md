@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-10-11
+
+### Added
+
+- Integration tests for the data layer, the health check, the cron and project API routes and the v4 migration script, running against a throwaway SQLite file.
+- QA checks for table filters, sorting, pagination, bulk actions, click country, mobile width and color scheme.
+- Show/hide password eye icon inside the password field on the login form.
+- Light/dark theme toggle in the navbar, remembered per browser.
+- Hamburger menu for the main navigation on narrow screens.
+- "Checar todos os links" button on the overview's dead links panel, running the health check over every registered link.
+
+### Changed
+
+- Repository moved to `AlexGalhardo/links.example.com` with a fresh history; `_legacy/` (v4 code) removed.
+- Dark is now the default theme regardless of the OS preference.
+- `seed.json` and `bun run db:seed` now load the EletroRadar project (`https://example.com`, 381 products) instead of Produtos Tech.
+
+### Fixed
+
+- Overview page no longer scrolls horizontally on narrow screens.
+- `commitlint.config.js` loads under the package's ES module mode.
+
 ## [5.0.0] - 2026-10-10
 
 Rewrite around three questions: is the link alive, where is it, and how many clicks did it get on which device.
@@ -50,5 +72,6 @@ Rewrite around three questions: is the link alive, where is it, and how many cli
 - Security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`); `X-Powered-By` removed.
 - Type errors no longer ignored at build time (`ignoreBuildErrors` removed).
 
-[Unreleased]: https://github.com/AlexGalhardo/links-afiliados/compare/v5.0.0...HEAD
-[5.0.0]: https://github.com/AlexGalhardo/links-afiliados/releases/tag/v5.0.0
+[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v5.1.0...HEAD
+[5.1.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.0.0...v5.1.0
+[5.0.0]: https://github.com/AlexGalhardo/links.example.com/releases/tag/v5.0.0

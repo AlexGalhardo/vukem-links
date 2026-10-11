@@ -18,8 +18,13 @@
 	--color-warn: light-dark(#96600a, #e6b94a);
 }
 
+/* Dark by default; the navbar toggle sets data-theme on <html>. */
 :root {
-	color-scheme: light dark;
+	color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+	color-scheme: light;
 }
 
 body {

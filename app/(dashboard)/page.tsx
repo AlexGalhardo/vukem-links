@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CheckAllLinks } from "@/components/link-actions";
 import { ClickMetrics, fmt, Metric, Panel, StatsPanels, StatusBadge } from "@/components/stats";
 import { getStats, type LinkRow, listLinks } from "@/lib/data";
 import { requireSession } from "@/lib/session";
@@ -13,8 +14,8 @@ function LinkList({ links, empty }: { links: LinkRow[]; empty: string }): ReactN
 					<Link href={`/links/${l.id}`} className="min-w-0 flex-1 truncate font-medium hover:text-accent">
 						{l.productName}
 					</Link>
-					<span className="text-muted">{l.projectName}</span>
-					<span className="text-muted">{l.store}</span>
+					<span className="hidden text-muted sm:inline">{l.projectName}</span>
+					<span className="hidden text-muted sm:inline">{l.store}</span>
 					<StatusBadge status={l.status} />
 					<span className="w-14 text-right font-medium">{fmt(l.clicks)}</span>
 				</li>
@@ -41,6 +42,7 @@ export default async function OverviewPage(): Promise<ReactNode> {
 			<StatsPanels stats={stats} />
 			<div className="grid gap-3 lg:grid-cols-2">
 				<Panel title="Links mortos">
+					<CheckAllLinks total={links.length} />
 					<LinkList links={dead.slice(0, 10)} empty="Nenhum link morto." />
 				</Panel>
 				<Panel title="Mais clicados">

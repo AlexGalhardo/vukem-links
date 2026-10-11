@@ -92,3 +92,39 @@ export function LinkActions({
 		</div>
 	);
 }
+
+// The action checks one batch (least recently checked first), so repeating it until the count is reached covers every link.
+async function checkEveryLink(total: number): ReturnType<typeof runHealthCheck> {
+	const summary = { checked: 0, ok: 0, failed: 0, inconclusive: 0, died: 0 };
+	while (summary.checked < total) {
+		const result = await runHealthCheck();
+		if (!result.ok) return result;
+		if (result.summary.checked === 0) break;
+		summary.checked += result.summary.checked;
+		summary.ok += result.summary.ok;
+		summary.failed += result.summary.failed;
+		summary.inconclusive += result.summary.inconclusive;
+		summary.died += result.summary.died;
+	}
+	return { ok: true, summary };
+}
+
+export function CheckAllLinks({ total }: { total: number }): ReactNode {
+	const check = useAction(
+		checkEveryLink,
+		({ summary }) =>
+			`${summary.checked} checados: ${summary.ok} ok, ${summary.failed} falhas, ${summary.inconclusive} inconclusivos, ${summary.died} novos mortos`,
+	);
+	return (
+		<div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-2">
+			<Button onClick={() => check.mutate([total])} disabled={check.isPending || total === 0}>
+				{check.isPending ? "Checando…" : "Checar todos os links"}
+			</Button>
+			<span className="text-xs text-muted">
+				{check.isPending
+					? "Pode levar alguns minutos. Mantenha a página aberta."
+					: "Um link vira morto após 3 falhas seguidas."}
+			</span>
+		</div>
+	);
+}
