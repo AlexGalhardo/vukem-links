@@ -4,11 +4,14 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { GET as cron } from "@/app/api/cron/health/route";
 import { GET as weekly } from "@/app/api/cron/weekly/route";
 import { POST as registerLinks, PUT as syncLinks } from "@/app/api/v1/links/route";
-import { listLinks, rotateApiToken, upsertProducts } from "@/lib/data";
+import { GET as health } from "@/app/health/route";
+import { listLinks, upsertProducts } from "@/lib/data";
 import { createProject, mockFetch } from "@/test/helpers";
 
 let restore = (): void => {};
 afterEach(() => restore());
+
+const API_KEY = "test-api-key";
 
 describe("GET /api/cron/health", () => {
 	const call = (authorization?: string): Promise<Response> =>
@@ -63,10 +66,10 @@ describe("POST /api/v1/links", () => {
 		// The route refuses links for a site that is offline: by default the project site answers.
 		restore = mockFetch(() => ({ status: 200 })).restore;
 		const project = await createProject();
-		const token = await rotateApiToken(project.id);
+		const token = API_KEY;
 		const post = (body: unknown, bearer: string | null = token): Promise<Response> =>
 			registerLinks(
-				new Request("http://localhost/api/v1/links", {
+				new Request(`http://localhost/api/v1/links?site=${project.baseUrl}`, {
 					method: "POST",
 					headers: bearer === null ? {} : { authorization: `Bearer ${bearer}` },
 					body: typeof body === "string" ? body : JSON.stringify(body),
@@ -75,13 +78,19 @@ describe("POST /api/v1/links", () => {
 		return { project, token, post };
 	}
 
-	test("401 without a token, with an unknown token or with a rotated-away token", async () => {
+	test("401 without a key, with a wrong key, with a longer key and when the key is not configured", async () => {
 		const { project, token, post } = await setup();
 		const body = { externalId: `${project.baseUrl}/p`, links: [{ url: "https://amzn.to/x" }] };
 		expect((await post(body, null)).status).toBe(401);
 		expect((await post(body, "la_unknown")).status).toBe(401);
-		await rotateApiToken(project.id);
-		expect((await post(body, token)).status).toBe(401);
+		expect((await post(body, `${token}-and-more`)).status).toBe(401);
+		delete process.env.LINKS_API_KEY;
+		try {
+			expect((await post(body, token)).status).toBe(401);
+			expect((await post(body, "undefined")).status).toBe(401);
+		} finally {
+			process.env.LINKS_API_KEY = token;
+		}
 		expect((await listLinks()).filter((l) => l.projectSlug === project.slug)).toHaveLength(0);
 	});
 
@@ -134,10 +143,10 @@ describe("POST /api/v1/links", () => {
 describe("project site must be online", () => {
 	test("409 on POST and PUT while the site does not answer, writing nothing", async () => {
 		const project = await createProject();
-		const token = await rotateApiToken(project.id);
+		const token = API_KEY;
 		const body = JSON.stringify([{ externalId: `${project.baseUrl}/p`, links: [{ url: "https://amzn.to/x" }] }]);
 		const request = (method: string): Request =>
-			new Request("http://localhost/api/v1/links", {
+			new Request(`http://localhost/api/v1/links?site=${project.baseUrl}`, {
 				method,
 				headers: { authorization: `Bearer ${token}` },
 				body,
@@ -165,10 +174,10 @@ describe("project site must be online", () => {
 			return { status: 200 };
 		}).restore;
 		const project = await createProject();
-		const token = await rotateApiToken(project.id);
+		const token = API_KEY;
 		const call = (bearer: string, body: string): Promise<Response> =>
 			syncLinks(
-				new Request("http://localhost/api/v1/links", {
+				new Request(`http://localhost/api/v1/links?site=${project.baseUrl}`, {
 					method: "PUT",
 					headers: { authorization: `Bearer ${bearer}` },
 					body,
@@ -184,10 +193,10 @@ describe("PUT /api/v1/links", () => {
 	async function setup() {
 		restore = mockFetch(() => ({ status: 200 })).restore;
 		const project = await createProject();
-		const token = await rotateApiToken(project.id);
+		const token = API_KEY;
 		const put = (body: unknown, bearer: string | null = token): Promise<Response> =>
 			syncLinks(
-				new Request("http://localhost/api/v1/links", {
+				new Request(`http://localhost/api/v1/links?site=${project.baseUrl}`, {
 					method: "PUT",
 					headers: bearer === null ? {} : { authorization: `Bearer ${bearer}` },
 					body: typeof body === "string" ? body : JSON.stringify(body),
@@ -281,5 +290,75 @@ describe("GET /api/cron/weekly", () => {
 		expect(mocked.telegram).toHaveLength(1);
 		expect(mocked.telegram[0]?.text).toContain("📊 Cliques nos últimos 7 dias");
 		expect(mocked.telegram[0]?.text).toContain(`• ${project.name}: 0`);
+	});
+});
+
+describe("site identification", () => {
+	const call = (query: string, body: unknown): Promise<Response> =>
+		syncLinks(
+			new Request(`http://localhost/api/v1/links${query}`, {
+				method: "PUT",
+				headers: { authorization: `Bearer ${API_KEY}` },
+				body: JSON.stringify(body),
+			}),
+		);
+
+	test("400 without ?site or with a site that is not a public http(s) address", async () => {
+		restore = mockFetch(() => ({ status: 200 })).restore;
+		const body = [{ externalId: "https://x.example.com/p", links: [{ url: "https://amzn.to/x" }] }];
+		for (const query of ["", "?site=", "?site=nope", "?site=ftp://x.example.com", "?site=http://127.0.0.1"]) {
+			const res = await call(query, body);
+			expect(res.status).toBe(400);
+			expect(await res.json()).toEqual({ error: "invalid_site" });
+		}
+	});
+
+	test("a site seen for the first time becomes a project, and its origin is the base URL", async () => {
+		restore = mockFetch(() => ({ status: 200 })).restore;
+		const host = `estreia-${crypto.randomUUID().slice(0, 8)}.example.com`;
+		const body = [{ externalId: `https://${host}/post/a`, links: [{ url: "https://amzn.to/a" }] }];
+		const first = await call(`?site=https://${host}/qualquer/caminho?x=1`, body);
+		expect(first.status).toBe(200);
+		expect(await first.json()).toMatchObject({ productsCreated: 1, linksAdded: 1 });
+		const created = (await listLinks()).filter((l) => l.externalId === `https://${host}/post/a`);
+		expect(created.map((l) => l.projectSlug)).toEqual([host.replaceAll(".", "-")]);
+
+		const again = await call(`?site=https://${host}`, body);
+		expect(await again.json()).toMatchObject({ productsCreated: 0, linksAdded: 0 });
+	});
+
+	test("a site that is offline is not turned into a project", async () => {
+		restore = mockFetch(() => ({ status: 503 })).restore;
+		const host = `fora-${crypto.randomUUID().slice(0, 8)}.example.com`;
+		const res = await call(`?site=https://${host}`, [
+			{ externalId: `https://${host}/p`, links: [{ url: "https://amzn.to/a" }] },
+		]);
+		expect(res.status).toBe(409);
+		expect((await listLinks()).some((l) => l.externalId === `https://${host}/p`)).toBe(false);
+	});
+
+	test("one site cannot write into another site's products", async () => {
+		restore = mockFetch(() => ({ status: 200 })).restore;
+		const owner = await createProject();
+		const theirs = `${owner.baseUrl}/theirs`;
+		await upsertProducts(owner, [{ externalId: theirs, links: [{ url: "https://amzn.to/owner" }] }]);
+		const intruder = await createProject();
+		const res = await call(`?site=${intruder.baseUrl}`, [
+			{ externalId: theirs, links: [{ url: "https://amzn.to/intruder" }] },
+			{ externalId: `${intruder.baseUrl}/mine`, links: [{ url: "https://amzn.to/mine" }] },
+		]);
+		expect(res.status).toBe(207);
+		expect((await listLinks()).filter((l) => l.externalId === theirs).map((l) => l.url)).toEqual([
+			"https://amzn.to/owner",
+		]);
+	});
+});
+
+describe("GET /health", () => {
+	test("answers ok to any origin while the database responds", async () => {
+		const res = await health();
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ status: "ok" });
+		expect(res.headers.get("access-control-allow-origin")).toBe("*");
 	});
 });

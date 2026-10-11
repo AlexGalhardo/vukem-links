@@ -11,7 +11,7 @@
 - Toda página em `app/(dashboard)/`, toda server action e toda rota de API do dashboard começa com `requireSession()` ou `getSession()`. Layout protegido não protege action nem rota.
 - URL vinda de fora (formulário, importação, API) passa por `isPublicHttpUrl`: só http(s), sem host privado. Ela é buscada pelo servidor na checagem de saúde.
 - `products.page_url` precisa estar no domínio de `projects.base_url` (`sameHost`): é o destino do fallback e não pode virar open redirect.
-- Token de API de projeto: só o SHA-256 é guardado; o valor em claro aparece uma vez.
+- A API dos sites usa uma chave única (`LINKS_API_KEY`), comparada em tempo constante (`hasBearer`). Um site só escreve no projeto da própria origem (`?site=`).
 - Nada de IP em `click_events`. Referer é guardado sem query string.
 - Segredos só em variável de ambiente. `.env*` é ignorado pelo git, exceto `.env.example`.
 

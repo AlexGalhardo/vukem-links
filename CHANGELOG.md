@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.0] - 2026-10-11
+
+### Added
+
+- A site seen for the first time by the API becomes a project on its own, named after its host. Connecting a new site takes one environment variable on the site and nothing in the dashboard.
+- `GET /health`, public and readable from any origin, so the sites can link straight to the store while the dashboard is down.
+
+### Changed
+
+- **BREAKING:** `/api/v1/links` is authenticated by one key shared by every site (`LINKS_API_KEY`) and the site names itself with `?site=<origin>`. Requests with a project token are refused.
+
+### Removed
+
+- **BREAKING:** per-project API tokens, the "Gerar token da API" button and the `projects.api_token_hash` column. Generating a token used to revoke the one a site was using and break its builds.
+
 ## [5.4.0] - 2026-10-11
 
 ### Changed
@@ -103,7 +118,8 @@ Rewrite around three questions: is the link alive, where is it, and how many cli
 - Security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`); `X-Powered-By` removed.
 - Type errors no longer ignored at build time (`ignoreBuildErrors` removed).
 
-[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v5.4.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v6.0.0...HEAD
+[6.0.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.4.0...v6.0.0
 [5.4.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.3.0...v5.4.0
 [5.3.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.2.0...v5.3.0
 [5.2.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.1.0...v5.2.0

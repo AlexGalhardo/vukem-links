@@ -13,7 +13,6 @@ export const projects = sqliteTable("projects", {
 	name: text("name").notNull(),
 	slug: text("slug").notNull().unique(),
 	baseUrl: text("base_url").notNull(),
-	apiTokenHash: text("api_token_hash"),
 	createdAt: createdAt(),
 });
 

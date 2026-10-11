@@ -9,7 +9,10 @@ Este dashboard é o único gerenciador dos links de afiliado de todos os sites (
 3. **Renderização.** O site nunca aponta direto para a loja. Todo botão usa `GET /link?id=<externalId>&store=<loja>`.
 4. **Site no ar.** O dashboard só aceita links de um projeto cuja URL base responde. Projeto fora do ar recebe `409`.
 
-Cada site guarda dois valores: a URL do dashboard e o token do projeto. O token fica só na variável de ambiente do provedor de deploy, nunca no repositório.
+5. **Sem configuração por site.** Todos os sites usam a mesma chave (`LINKS_API_KEY` aqui, `LINKS_DASHBOARD_TOKEN` no site) e se identificam pela própria URL. Um site visto pela primeira vez vira projeto sozinho: conectar um site novo é definir uma variável de ambiente no deploy dele.
+6. **Dashboard fora do ar não derruba a venda.** O site consulta `GET /health` ao carregar a página; sem resposta, os botões passam a apontar direto para a loja.
+
+A chave fica só na variável de ambiente do provedor de deploy, nunca no repositório.
 
 ## Redirect público
 
@@ -30,11 +33,14 @@ Nos projetos, use como `href` do botão de compra:
 ## Cadastro pelos projetos
 
 ```text
-Authorization: Bearer <token do projeto>
+PUT /api/v1/links?site=<origem do site>
+Authorization: Bearer <LINKS_API_KEY>
 Content-Type: application/json
 ```
 
-O token é gerado na página do projeto ("Gerar token da API"), aparece uma única vez e gerar outro invalida o anterior.
+- **Chave:** uma só para todos os sites, definida na variável `LINKS_API_KEY` do dashboard. Não existe token por projeto.
+- **`site`:** endereço do site que está chamando, por exemplo `https://example.com`. Só a origem é usada. O projeto com essa URL base recebe os dados; se não existir, é criado com o nome do host.
+- Um site só escreve nos próprios produtos: `externalId` de outro projeto e `pageUrl` de outro domínio são recusados.
 
 | Método | Uso | Corpo | Remove algo? |
 | --- | --- | --- | --- |
@@ -85,16 +91,25 @@ Produto existente recebe só os links novos, no fim da ordem de prioridade. Nada
 | `201` | `POST` aplicado. Corpo: `{ productsCreated, linksAdded, errors: [] }` |
 | `207` | Parte recusada; veja `errors`. O restante foi aplicado |
 | `400` | Corpo inválido (`issues` traz o detalhe) |
-| `401` | Token ausente ou inválido |
+| `400` | `{ "error": "invalid_site" }`: falta `?site=` ou ele não é um endereço http(s) público |
+| `401` | Chave ausente ou errada |
 | `409` | `{ "error": "project_offline" }`: a URL base do projeto não respondeu. Nada foi gravado |
 
 Itens recusados em `errors`: `externalId` que pertence a outro projeto, ou `pageUrl` fora do domínio do projeto.
 
 ```bash
-curl -X PUT https://links.exemplo.com/api/v1/links \
+curl -X PUT "https://links.exemplo.com/api/v1/links?site=https://app.meuprojeto.com" \
   -H "Authorization: Bearer la_xxxxx" -H "Content-Type: application/json" \
   -d '[{"externalId":"https://app.meuprojeto.com/fones/modelo-x","links":[{"url":"https://amzn.to/abc123"}]}]'
 ```
+
+## Saúde
+
+```text
+GET /health
+```
+
+Pública e legível de qualquer origem (CORS). `200 { "status": "ok" }` quando o dashboard e o banco respondem; `503` caso contrário. Os sites usam para decidir se o botão passa pelo redirect ou vai direto para a loja.
 
 ## Importação pelo dashboard
 

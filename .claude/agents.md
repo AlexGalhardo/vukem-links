@@ -16,7 +16,8 @@ Next.js 16 (App Router, Server Components) · React 19 · TypeScript 7 strict ·
 | `app/(dashboard)/` | Telas autenticadas: visão geral, `links`, `links/[id]`, `projects`, `projects/[slug]` |
 | `app/actions.ts` | Todas as server actions (mutações do dashboard) |
 | `app/api/links` | Lista de links para a tabela (TanStack Query) |
-| `app/api/v1/links` | API por token de projeto: `PUT` sincroniza o catálogo inteiro (script de build dos sites), `POST` acrescenta |
+| `app/api/v1/links` | API dos sites (chave única `LINKS_API_KEY` + `?site=`): `PUT` sincroniza o catálogo inteiro, `POST` acrescenta. Site novo vira projeto sozinho |
+| `app/health` | Saúde pública (CORS): os sites caem para o link direto da loja quando ela não responde |
 | `app/api/cron/health` | Checagem de saúde de hora em hora (Vercel Cron) |
 | `app/api/cron/weekly` | Relatório semanal de cliques por projeto no Telegram (Vercel Cron) |
 | `lib/telegram.ts` | `notify`: alerta de link morto, log de cada clique redirecionado, relatório semanal |

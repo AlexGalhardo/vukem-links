@@ -34,6 +34,7 @@ bun run dev
 | `BETTER_AUTH_SECRET` | Sim | Assina sessões. 32+ bytes aleatórios |
 | `BETTER_AUTH_URL` | Sim | URL pública do app |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Para `db:seed` | Conta admin (senha com 8+ caracteres) |
+| `LINKS_API_KEY` | Em produção | Chave que os sites enviam para registrar links (`/api/v1/links`). Sem ela a API recusa tudo |
 | `CRON_SECRET` | Em produção | Protege `/api/cron/health` e `/api/cron/weekly` |
 | `TELEGRAM_BOT_HTTP_TOKEN`, `TELEGRAM_BOT_CHANNEL_ID` | Não | Bot do Telegram: alerta de link morto, log de cada clique redirecionado e relatório semanal de cliques |
 

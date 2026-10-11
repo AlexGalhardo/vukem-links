@@ -8,6 +8,7 @@ const file = join(mkdtempSync(join(tmpdir(), "links-afiliados-test-")), "test.db
 process.env.TURSO_DATABASE_URL = `file:${file}`;
 delete process.env.TURSO_AUTH_TOKEN;
 process.env.CRON_SECRET = "test-cron-secret";
+process.env.LINKS_API_KEY = "test-api-key";
 process.env.TELEGRAM_BOT_HTTP_TOKEN = "test-token";
 process.env.TELEGRAM_BOT_CHANNEL_ID = "123";
 

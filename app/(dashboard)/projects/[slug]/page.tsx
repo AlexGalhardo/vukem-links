@@ -32,7 +32,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 					>
 						{project.baseUrl}
 					</a>
-					<p className="text-muted">API: {project.apiTokenHash ? "token ativo" : "sem token"}</p>
 				</div>
 				<ProjectTools id={project.id} name={project.name} />
 			</div>

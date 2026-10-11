@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useState } from "react";
-import { createProject, deleteProject, importProducts, rotateToken } from "@/app/actions";
-import { Button, Confirm, inputClass, Modal, TextField, toast, useAction } from "@/components/ui";
+import { createProject, deleteProject, importProducts } from "@/app/actions";
+import { Button, Confirm, inputClass, Modal, TextField, useAction } from "@/components/ui";
 
 export function NewProjectDialog(): ReactNode {
 	const [open, setOpen] = useState(false);
@@ -53,7 +53,6 @@ export function ProjectTools({ id, name }: { id: string; name: string }): ReactN
 	const [importing, setImporting] = useState(false);
 	const [text, setText] = useState("");
 	const [errors, setErrors] = useState<string[]>([]);
-	const [token, setToken] = useState<string | null>(null);
 
 	const runImport = useAction(importProducts, ({ summary }) => {
 		setErrors(summary.errors);
@@ -63,10 +62,6 @@ export function ProjectTools({ id, name }: { id: string; name: string }): ReactN
 		}
 		return `${summary.productsCreated} produto(s) e ${summary.linksAdded} link(s) importados; ignorados: ${summary.skippedExisting} já cadastrado(s), ${summary.skippedDead} morto(s); ${summary.errors.length} erro(s)`;
 	});
-	const rotate = useAction(rotateToken, (result) => {
-		setToken(result.token);
-		return undefined;
-	});
 	const remove = useAction(deleteProject, () => {
 		router.replace("/projects");
 		return "Projeto excluído";
@@ -75,9 +70,6 @@ export function ProjectTools({ id, name }: { id: string; name: string }): ReactN
 	return (
 		<div className="flex flex-wrap gap-2">
 			<Button onClick={() => setImporting(true)}>Importar JSON/CSV</Button>
-			<Button onClick={() => rotate.mutate([id])} disabled={rotate.isPending}>
-				Gerar token da API
-			</Button>
 			<Confirm
 				trigger="Excluir projeto"
 				title={`Excluir ${name}?`}
@@ -121,22 +113,6 @@ export function ProjectTools({ id, name }: { id: string; name: string }): ReactN
 						onClick={() => runImport.mutate([id, text])}
 					>
 						{runImport.isPending ? "Importando…" : "Importar"}
-					</Button>
-				</div>
-			</Modal>
-
-			<Modal title="Token da API" open={token !== null} onOpenChange={() => setToken(null)}>
-				<p className="text-muted">
-					Copie agora: o token não é exibido de novo. Gerar outro invalida este. Uso em{" "}
-					<code>docs/api.md</code>.
-				</p>
-				<code className="rounded-md border border-line bg-raised p-2 font-mono text-xs break-all">{token}</code>
-				<div className="flex justify-end gap-2">
-					<Button
-						variant="primary"
-						onClick={() => navigator.clipboard.writeText(token ?? "").then(() => toast("Token copiado"))}
-					>
-						Copiar
 					</Button>
 				</div>
 			</Modal>

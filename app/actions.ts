@@ -4,7 +4,7 @@ import { eq, inArray, min } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { affiliateLinks, projects } from "@/db/schema";
-import { registeredUrls, rotateApiToken, type UpsertSummary, upsertProducts } from "@/lib/data";
+import { registeredUrls, type UpsertSummary, upsertProducts } from "@/lib/data";
 import { db } from "@/lib/db";
 import { type CheckSummary, checkLinks, findDeadUrls, isSiteLive } from "@/lib/health";
 import { detectStore, isPublicHttpUrl, parseImport, planImport, productInput } from "@/lib/links";
@@ -189,16 +189,6 @@ export async function runHealthCheck(linkIds?: string[]): Promise<Result<{ summa
 		const summary = await checkLinks(linkIds ? ids.parse(linkIds) : undefined);
 		revalidatePath("/", "layout");
 		return { ok: true, summary };
-	} catch (error) {
-		return fail(error);
-	}
-}
-
-export async function rotateToken(projectId: string): Promise<Result<{ token: string }>> {
-	try {
-		await requireSession();
-		const project = await findProject(projectId);
-		return { ok: true, token: await rotateApiToken(project.id) };
 	} catch (error) {
 		return fail(error);
 	}

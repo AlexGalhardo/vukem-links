@@ -17,7 +17,7 @@
 | Server actions (`app/actions.ts`) | `requireSession()` na primeira linha |
 | `GET /api/links` | `getSession()` → 401 |
 
-Rotas que **não** usam sessão, por desenho: `/link` (pública), `/api/v1/links` (token de projeto), `/api/cron/health` e `/api/cron/weekly` (`CRON_SECRET`).
+Rotas que **não** usam sessão, por desenho: `/link` (pública), `/health` (pública), `/api/v1/links` (chave `LINKS_API_KEY`, a mesma para todos os sites), `/api/cron/health` e `/api/cron/weekly` (`CRON_SECRET`).
 
 ## Operações
 

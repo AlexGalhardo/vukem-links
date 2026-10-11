@@ -1,0 +1,1 @@
+ALTER TABLE `projects` DROP COLUMN `api_token_hash`;

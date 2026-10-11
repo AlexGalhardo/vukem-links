@@ -3,13 +3,12 @@ import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import { affiliateLinks, clickEvents, linkChecks, products, projects } from "@/db/schema";
 import {
+	findOrCreateProject,
 	getClicksByProject,
 	getLinkDetail,
 	getStats,
-	hashToken,
 	listLinks,
 	registeredUrls,
-	rotateApiToken,
 	syncProducts,
 	upsertProducts,
 } from "@/lib/data";
@@ -329,17 +328,25 @@ describe("cascade", () => {
 	});
 });
 
-describe("api token", () => {
-	test("stores only the hash and each rotation invalidates the previous token", async () => {
+describe("findOrCreateProject", () => {
+	test("returns the project that already has this base URL", async () => {
 		const project = await createProject();
-		const token = await rotateApiToken(project.id);
-		expect(token).toMatch(/^la_[\w-]{32}$/);
-		const [stored] = await db.select().from(projects).where(eq(projects.id, project.id));
-		expect(stored?.apiTokenHash).toBe(hashToken(token));
-		expect(stored?.apiTokenHash).not.toContain(token);
-		const next = await rotateApiToken(project.id);
-		const [rotated] = await db.select().from(projects).where(eq(projects.id, project.id));
-		expect(rotated?.apiTokenHash).toBe(hashToken(next));
-		expect(rotated?.apiTokenHash).not.toBe(hashToken(token));
+		expect((await findOrCreateProject(project.baseUrl)).id).toBe(project.id);
+	});
+
+	test("creates a project named after the host, with a slug derived from it", async () => {
+		const host = `novo-${crypto.randomUUID().slice(0, 8)}.example.com`;
+		const project = await findOrCreateProject(`https://${host}`);
+		expect(project).toMatchObject({ name: host, slug: host.replaceAll(".", "-"), baseUrl: `https://${host}` });
+		expect((await findOrCreateProject(`https://${host}`)).id).toBe(project.id);
+	});
+
+	test("picks another slug when the derived one is taken, and drops a leading www", async () => {
+		const host = `loja-${crypto.randomUUID().slice(0, 8)}.example.com`;
+		const first = await findOrCreateProject(`https://${host}`);
+		const second = await findOrCreateProject(`https://www.${host}`);
+		expect(second.id).not.toBe(first.id);
+		expect(second.name).toBe(host);
+		expect(second.slug).toBe(`${first.slug}-2`);
 	});
 });

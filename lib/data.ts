@@ -1,4 +1,3 @@
-import { createHash, randomBytes } from "node:crypto";
 import { and, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import {
@@ -18,18 +17,22 @@ import { detectStore, nameFromExternalId, type ProductInput, type ProjectClicks,
 const DAY = 86_400_000;
 const humanClick = eq(clickEvents.isBot, false);
 
-export function hashToken(token: string): string {
-	return createHash("sha256").update(token).digest("hex");
-}
-
-/** Returns the plain token once; only its hash is stored. */
-export async function rotateApiToken(projectId: string): Promise<string> {
-	const token = `la_${randomBytes(24).toString("base64url")}`;
-	await db
-		.update(projects)
-		.set({ apiTokenHash: hashToken(token) })
-		.where(eq(projects.id, projectId));
-	return token;
+/** The project of a site, created on its first contact: name and slug come from the host. */
+export async function findOrCreateProject(baseUrl: string): Promise<Project> {
+	const [existing] = await db.select().from(projects).where(eq(projects.baseUrl, baseUrl));
+	if (existing) return existing;
+	const host = new URL(baseUrl).hostname.replace(/^www\./, "");
+	const base =
+		host
+			.replace(/[^a-z0-9]+/g, "-")
+			.replace(/^-+|-+$/g, "")
+			.slice(0, 34) || "site";
+	const taken = new Set((await db.select({ slug: projects.slug }).from(projects)).map((project) => project.slug));
+	let slug = base;
+	for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
+	const [created] = await db.insert(projects).values({ name: host, slug, baseUrl }).returning();
+	if (!created) throw new Error(`Could not create the project of ${baseUrl}`);
+	return created;
 }
 
 export interface UpsertSummary {

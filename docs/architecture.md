@@ -10,7 +10,7 @@ projects 1 ── N products 1 ── N affiliate_links 1 ── N link_checks
 
 | Tabela | Papel | Campos-chave |
 | --- | --- | --- |
-| `projects` | Aplicação onde os links aparecem | `slug`, `base_url`, `api_token_hash` |
+| `projects` | Aplicação onde os links aparecem | `slug`, `base_url` |
 | `products` | Página de produto dentro do projeto | `external_id` (id público do redirect), `page_url`, `category` |
 | `affiliate_links` | Um link de afiliado de um produto | `store`, `url`, `priority`, `status`, `consecutive_failures`, `legacy_clicks` |
 | `click_events` | Um clique | `device`, `os`, `browser`, `country`, `referer`, `is_bot` |

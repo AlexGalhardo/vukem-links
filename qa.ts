@@ -101,6 +101,7 @@ const PROJECT = { name: `QA ${RUN}`, slug: `qa-${RUN}`, baseUrl: "https://exampl
 // externalId is unique across projects: the run id keeps a leftover from a failed run from colliding.
 const PAGE = `${PROJECT.baseUrl}/qa-${RUN}`;
 const PRODUCT_ID = `${PAGE}/produto/fone`;
+const API_LINKS = `/api/v1/links?site=${encodeURIComponent(PROJECT.baseUrl)}`;
 // .invalid never resolves (RFC 2606): the health check fails fast and deterministically, with no real store involved.
 const LINK_A = `https://a-${RUN}.invalid/oferta`;
 const LINK_B = `https://b-${RUN}.invalid/oferta`;
@@ -198,13 +199,19 @@ async function suiteAuthorization(anon: APIRequestContext): Promise<void> {
 			const status = await probe();
 			assert(`${route} rejects anonymous calls`, status === 401, `status ${status}`);
 		}
+		const health = await anon.get("/health", { headers: { Origin: "https://some-site.example.com" } });
+		assert(
+			"/health is public and readable from another origin",
+			health.status() === 200 && health.headers()["access-control-allow-origin"] === "*",
+			`status ${health.status()}`,
+		);
 		const wrongCron = await anon.get("/api/cron/health", { headers: { Authorization: "Bearer wrong" } });
 		assert("cron rejects a wrong secret", wrongCron.status() === 401, `status ${wrongCron.status()}`);
 		const wrongToken = await anon.post("/api/v1/links", {
 			headers: { Authorization: "Bearer la_wrong" },
 			data: { externalId: "x", links: [] },
 		});
-		assert("project API rejects a wrong token", wrongToken.status() === 401, `status ${wrongToken.status()}`);
+		assert("project API rejects a wrong key", wrongToken.status() === 401, `status ${wrongToken.status()}`);
 		const signUp = await anon.post("/api/auth/sign-up/email", {
 			data: { email: `qa-${RUN}@example.com`, password: "QaTest!2345", name: "qa" },
 		});
@@ -380,14 +387,12 @@ async function suiteRedirect(page: Page, api: APIRequestContext, anon: APIReques
 async function suiteProjectApi(page: Page, api: APIRequestContext, anon: APIRequestContext): Promise<void> {
 	suite("5. Project API and import");
 	await guarded("project API", async () => {
-		await page.goto(`/projects/${PROJECT.slug}`);
-		await page.getByRole("button", { name: "Gerar token da API" }).click();
-		const token = (await page.locator("code", { hasText: /^la_/ }).textContent()) ?? "";
-		assert("token is shown once after generation", token.startsWith("la_") && token.length > 30);
-		const auth = { Authorization: `Bearer ${token}` };
+		const key = process.env.LINKS_API_KEY ?? "";
+		assert("LINKS_API_KEY is set for the run", key.length >= 16, "set it in .env (same value the server uses)");
+		const auth = { Authorization: `Bearer ${key}` };
 		const before = (await ownLinks(api)).length;
 
-		const created = await anon.post("/api/v1/links", {
+		const created = await anon.post(API_LINKS, {
 			headers: auth,
 			data: { externalId: `${PAGE}/produto/api`, links: [{ url: "https://amzn.to/qa" }] },
 		});
@@ -395,7 +400,7 @@ async function suiteProjectApi(page: Page, api: APIRequestContext, anon: APIRequ
 		const row = (await ownLinks(api)).find((l) => l.externalId.endsWith("/produto/api"));
 		assert("store is detected from the URL", row?.store === "amazon");
 
-		const again = await anon.post("/api/v1/links", {
+		const again = await anon.post(API_LINKS, {
 			headers: auth,
 			data: { externalId: `${PAGE}/produto/api`, links: [{ url: "https://amzn.to/qa" }] },
 		});
@@ -404,19 +409,19 @@ async function suiteProjectApi(page: Page, api: APIRequestContext, anon: APIRequ
 			again.status() === 201 && (await ownLinks(api)).length === before + 1,
 		);
 
-		const bad = await anon.post("/api/v1/links", { headers: auth, data: { externalId: "", links: "nope" } });
+		const bad = await anon.post(API_LINKS, { headers: auth, data: { externalId: "", links: "nope" } });
 		assert("invalid body is 400", bad.status() === 400, `status ${bad.status()}`);
-		const notJson = await anon.post("/api/v1/links", {
+		const notJson = await anon.post(API_LINKS, {
 			headers: { ...auth, "Content-Type": "application/json" },
 			data: "{oops",
 		});
 		assert("malformed JSON is 400", notJson.status() === 400, `status ${notJson.status()}`);
-		const unsafe = await anon.post("/api/v1/links", {
+		const unsafe = await anon.post(API_LINKS, {
 			headers: auth,
 			data: { externalId: `${PAGE}/produto/x`, links: [{ url: "javascript:alert(1)" }] },
 		});
 		assert("javascript: URL is 400", unsafe.status() === 400, `status ${unsafe.status()}`);
-		const foreign = await anon.post("/api/v1/links", {
+		const foreign = await anon.post(API_LINKS, {
 			headers: auth,
 			data: { externalId: "https://other.example.org/p", links: [{ url: "https://amzn.to/qa2" }] },
 		});

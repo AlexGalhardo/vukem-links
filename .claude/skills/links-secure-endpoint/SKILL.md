@@ -15,7 +15,7 @@ description: >
 | Page in `app/(dashboard)/` | `await requireSession()` at the top of the page, even though the layout also checks |
 | Server action | `await requireSession()` as the first line inside `try` |
 | Dashboard API route | `if (!(await getSession())) return 401` |
-| `app/api/v1/*` | Project token: `Authorization: Bearer la_…`, looked up by `hashToken()` |
+| `app/api/v1/*` | Shared key: `Authorization: Bearer $LINKS_API_KEY`, checked with `hasBearer()`; the project comes from `?site=` |
 | `app/api/cron/*` | `CRON_SECRET` compared with `timingSafeEqual` |
 | `app/link/route.ts` | Public by design. It must only ever redirect to a stored link or the product's `pageUrl` |
 
@@ -38,7 +38,7 @@ A server action is a public POST endpoint. The layout redirect does not protect 
 
 ## 4. Do not leak
 
-- Never return `apiTokenHash`, session rows or better-auth tables from a route or action.
+- Never return session rows or better-auth tables from a route or action.
 - A new token is shown once; only its SHA-256 is stored.
 - `click_events` holds no IP. Referer is stored as origin + path.
 - Text from the database is rendered as text. No `dangerouslySetInnerHTML`.
