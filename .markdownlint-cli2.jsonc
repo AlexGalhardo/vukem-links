@@ -13,5 +13,5 @@
 		"MD024": { "siblings_only": true }
 	},
 	"globs": ["*.md", "docs/**/*.md", ".github/**/*.md"],
-	"ignores": ["node_modules", ".claude", "graphify-out", ".next"]
+	"ignores": ["node_modules", ".claude", ".next"]
 }

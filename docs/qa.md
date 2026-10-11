@@ -15,9 +15,10 @@
 
 | Arquivo | Cobre |
 | --- | --- |
-| `lib/data.test.ts` | `upsertProducts` (idempotência, outro projeto, página fora do domínio, lotes), contagens de `listLinks`, `getStats` por projeto e por link, cascata de exclusão, token de API |
+| `lib/data.test.ts` | `upsertProducts` (idempotência, outro projeto, página fora do domínio, lotes), contagens de `listLinks`, `getStats` por projeto e por link, cascata de exclusão, `syncProducts`, `findOrCreateProject` |
 | `lib/health.test.ts` | `checkLinks` com `fetch` simulado: vivo, morto na 3ª falha, alerta Telegram único, 403/429, timeout, redirect para a home, lote sem ids |
-| `app/api/routes.test.ts` | `/api/cron/health` (segredo certo, errado, ausente) e `POST /api/v1/links` (401, 201, 400, 207) |
+| `lib/env.test.ts` | `envProblems`: valor mal formado, essenciais em produção, banco em arquivo local |
+| `app/api/routes.test.ts` | `/api/cron/health` e `/api/cron/weekly` (segredo certo, errado, ausente), `POST` e `PUT /api/v1/links` (401, 201, 400, 207, site fora do ar, identificação por `?site=`) e `/health` |
 | `scripts/migrate-v4.test.ts` | Script de migração real sobre tabelas no formato da v4: cópia, contadores, idempotência, v4 intacta |
 
 Cada teste cria o próprio projeto (`test/helpers.ts`), então não há limpeza entre testes. `mockFetch` substitui o `fetch` global: respostas de loja são definidas pelo teste e chamadas ao Telegram são capturadas.
@@ -46,10 +47,10 @@ Primeira vez: `bunx playwright install chromium`.
 ### O que ele verifica
 
 1. **Superfície pública**: headers de segurança, páginas do dashboard fechadas, `/link` com id inválido.
-2. **Autorização**: toda rota em `app/api/` recusa chamada anônima; segredo e token errados; cadastro público desligado.
+2. **Autorização**: toda rota em `app/api/` recusa chamada anônima; segredo e chave errados; cadastro público desligado.
 3. **CRUD pela UI**: projeto, produto com dois links, XSS armazenado, rejeição de `javascript:`, host privado e página fora do domínio, busca na tabela.
 4. **Redirect e saúde**: destino por prioridade, contagem de cliques humanos vs. bot, device, referer sem query string, link morto após 3 falhas, fallback para o próximo link e para a página do produto, "Tornar principal", edição de URL.
-5. **API e importação**: token, idempotência, corpo inválido, importação CSV.
+5. **API e importação**: chave `LINKS_API_KEY`, idempotência, corpo inválido, importação CSV.
 6. **Tabela**: filtros de status e loja, ordenação, selecionar página, checagem e exclusão em lote, paginação.
 7. **Layout**: nenhuma página com scroll horizontal em 390 px; menu hambúrguer abre a navegação e a navbar fica no topo ao rolar; tema escuro é o padrão, o botão de tema troca para claro e a escolha sobrevive ao reload.
 8. **Exclusão**: link e projeto, com confirmação.

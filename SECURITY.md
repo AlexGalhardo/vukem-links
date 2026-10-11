@@ -18,7 +18,7 @@ You can expect a first reply within 5 business days.
 
 ## Scope
 
-In scope: this repository's code, including the public redirect (`/link`), authentication and sessions, the project API tokens, the cron endpoint, the import flow and the server-side health check (SSRF).
+In scope: this repository's code, including the public redirect (`/link`), authentication and sessions, the sites' API key (`LINKS_API_KEY`), the cron endpoint, the import flow and the server-side health check (SSRF).
 
 Out of scope: denial of service by volume, social engineering, findings that need a compromised device or account, and third-party services (Vercel, Turso, Telegram, the affiliate stores). Report those to the vendor.
 

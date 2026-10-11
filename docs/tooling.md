@@ -17,7 +17,8 @@ Bun carrega o `.env` sozinho em `bun run` e `bun <arquivo>`: scripts e testes n�
 | Script | Comando | Uso |
 | --- | --- | --- |
 | `dev` | `next dev` | Servidor de desenvolvimento |
-| `build` / `start` | `next build` / `next start` | Build e servidor de produção |
+| `build` / `start` | `bun scripts/check-env.ts && next build` / `next start` | Build (começa pela conferência do ambiente) e servidor de produção |
+| `check-env` | `bun scripts/check-env.ts` | Confere as variáveis de ambiente contra `lib/env.ts` |
 | `typecheck` | `tsc --noEmit` | Tipos |
 | `lint` | `biome check .` | Lint e formatação, sem escrever |
 | `format` | `biome check --write .` | Aplica as correções |
@@ -78,4 +79,5 @@ Ao trocar a versão do Bun, atualize os três lugares que a fixam: a tag em `inf
 | [`.claude/agents.md`](../.claude/agents.md) | Mapa do código e índice da documentação (importado por `CLAUDE.md`; `AGENTS.md` aponta para ele) |
 | [`.claude/rules/project.md`](../.claude/rules/project.md) | Regras do projeto |
 | `.claude/skills/links-*` | Skills do projeto: verificação local, endpoint seguro, mudança de banco, release |
+| `.claude/skills/ponytail*` | Única skill de terceiros versionada, origem do comentário `// ponytail:` ([`SOURCES.md`](../.claude/skills/SOURCES.md)). Skills genéricas vêm da instalação global de cada dev |
 | [`PLAN.md`](../PLAN.md) | Estado atual e pendências: leia antes, atualize depois |

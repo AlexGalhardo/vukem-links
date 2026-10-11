@@ -6,7 +6,7 @@
 
 | Parte | Sobe quando |
 | --- | --- |
-| MAJOR | Quebra o contrato de `/link?id=`, quebra `POST /api/v1/links`, ou a migration exige passo manual nos dados |
+| MAJOR | Quebra o contrato de `/link?id=`, quebra a API dos sites (`/api/v1/links`), ou a migration exige passo manual nos dados |
 | MINOR | Funcionalidade nova compatível (tela, métrica, campo opcional na API) |
 | PATCH | Correção, atualização de dependência, documentação, refatoração interna |
 
@@ -38,7 +38,7 @@ Escopos usados: `redirect`, `health`, `links`, `projects`, `auth`, `api`, `ui`, 
 ```text
 feat(health): mark link dead after three consecutive failures
 fix(redirect): fall back to product page when every link is dead
-feat(api)!: require project token on POST /api/v1/links
+feat(api)!: authenticate sites with one shared key
 ```
 
 ## Dependências

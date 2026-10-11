@@ -1,52 +1,44 @@
 ---
 name: links-release
 description: >
-  How to cut a release of links-afiliados: choosing the SemVer bump, moving CHANGELOG.md entries from Unreleased
-  to a dated version, bumping package.json, committing and tagging. Use it when the dev asks to release, bump the
-  version, tag, or "fechar a versão".
+  How to release links-afiliados. Every commit pushed to the remote is a version: SemVer bump, CHANGELOG.md
+  section, package.json, one commit, annotated tag, push and GitHub Release. Use it when the dev asks to push,
+  release, bump the version, tag, or "fechar a versão".
 ---
 
-# Release workflow
+# Release checklist
 
-## 1. Choose the bump (SemVer)
+The commands live in `docs/workflows.md` (Release) and the conventions in `docs/conventions.md`. This is the
+order to follow and what goes wrong.
 
-| Bump | When, in this project |
-| --- | --- |
-| **major** | `/link?id=` contract changes, `POST /api/v1/links` breaks, or a migration needs a manual data step |
-| **minor** | New screen, new field in the API, new check or metric, backwards compatible |
-| **patch** | Bug fix, dependency update, docs, internal refactor |
+1. **Only when the dev asked for it in this session.** Pushing and releasing are never implied by "implement X".
+   Deploying to Vercel is a separate request (`docs/workflows.md`, Deploy).
+2. **Choose the bump** with the SemVer table of `docs/conventions.md`. The last released version is the top
+   dated section of `CHANGELOG.md`; what changed since:
 
-Derive it from the commits since the last tag: any `feat!`/`BREAKING CHANGE` → major, any `feat` → minor, else patch.
+   ```bash
+   git log $(git describe --tags --abbrev=0)..HEAD --oneline
+   git status --short
+   ```
 
-```bash
-git log $(git describe --tags --abbrev=0)..HEAD --oneline
-```
+3. **Update the files**: `CHANGELOG.md` (`[Unreleased]` content becomes `## [X.Y.Z] - YYYY-MM-DD`, an empty
+   `[Unreleased]` stays on top, the compare links at the bottom gain the new version), `package.json`
+   (`"version"`), `PLAN.md` (**Estado atual**).
+4. **One commit** carries the change, the bump and the changelog. Its message describes the change
+   (`feat(api): ...`, `docs: ...`), not the release: there is no separate `chore(release)` commit.
+   Format and scopes: `docs/conventions.md`; commitlint rejects a header or body line over 100 characters.
+5. **Validate, tag, push, release** with the commands of `docs/workflows.md` (Release): `bun run ci`, the
+   commit, `git tag -a vX.Y.Z -m "vX.Y.Z"`, `git push origin main vX.Y.Z`, then `gh release create` with that
+   version's changelog section as notes.
+6. **Verify**: `gh release view vX.Y.Z --repo AlexGalhardo/links.example.com` shows the release and
+   `git status -sb` shows nothing ahead of `origin/main`.
 
-## 2. Update files
+## What goes wrong
 
-- `CHANGELOG.md`: rename `## [Unreleased]` content to `## [X.Y.Z] - YYYY-MM-DD`, leave an empty `## [Unreleased]` on top, update the compare links at the bottom. Keep the Keep a Changelog groups: Added, Changed, Deprecated, Removed, Fixed, Security.
-- `package.json`: `"version": "X.Y.Z"`.
-- `PLAN.md`: update **Estado atual**.
-
-## 3. Verify, commit, tag
-
-```bash
-bun run ci
-git add CHANGELOG.md package.json PLAN.md
-git commit -m "chore(release): vX.Y.Z"
-git tag -a vX.Y.Z -m "vX.Y.Z"
-```
-
-Do not push the commit or the tag, and do not deploy, unless the dev asked for it in this session.
-
-When the dev does ask: every pushed commit carries its own version, tag and GitHub Release with that version's
-changelog section. The push, the `gh release create` command and the Vercel deploy are in `docs/workflows.md`.
-
-## Commit messages (Conventional Commits, enforced by commitlint)
-
-`<type>(<scope>): <subject>` — imperative, lower case, no trailing period, in English.
-
-Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`, `perf`.
-Scopes used here: `redirect`, `health`, `links`, `projects`, `auth`, `api`, `ui`, `db`, `qa`, `setup`, `deps`.
-
-Breaking change: `feat(api)!: …` plus a `BREAKING CHANGE:` footer explaining the migration.
+- The `pre-push` hook runs `bun run ci` again. If it fails, fix the cause; never `--no-verify`, never a forced
+  push to `main`.
+- A tag that already exists on the remote is never moved. A mistake after the push is fixed by the next version.
+- `release-notes.md` is a temporary file: remove it after `gh release create` so it is not committed later.
+- A version with a new file in `drizzle/` needs the migration applied in production before the deploy, by the
+  dev's request (`docs/workflows.md`, Banco (Turso)). Say so when reporting the release.
+- Pushing does not publish anything: the repository is not connected to Vercel.

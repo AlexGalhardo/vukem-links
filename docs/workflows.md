@@ -55,7 +55,7 @@ Regra do repositório: **todo commit enviado ao remoto vira uma versão**, com t
 
 Verificação: `gh release view vX.Y.Z --repo AlexGalhardo/links.example.com` mostra a release e `git status -sb` não mostra commits à frente de `origin/main`.
 
-A skill `links-release` cobre a parte local (bump, changelog, tag). Push e release só quando o dono pedir na sessão.
+A skill `links-release` é o checklist deste fluxo. Push e release só quando o dono pedir na sessão.
 
 ## Deploy (Vercel)
 

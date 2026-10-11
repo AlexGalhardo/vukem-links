@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.2.1] - 2026-10-11
+
+### Changed
+
+- Agent guide, project rules and the four `links-*` skills under `.claude/` were checked against the code: each rule now lives in one place (`.claude/rules/project.md`) and the skills hold only the procedure and link to `docs/`.
+- `links-release` follows the release flow of `docs/workflows.md` (one commit per version, tag, push and GitHub Release) instead of a separate `chore(release)` commit.
+- `docs/qa.md`, `docs/tooling.md`, `docs/conventions.md` and `SECURITY.md` describe the shared `LINKS_API_KEY`, the `PUT` sync, `/health` and the environment check where they still described project tokens.
+
+### Removed
+
+- Third-party skills, agents and checklists vendored in `.claude/` that nothing in the project referred to (290 files, about 6.7 MB): the agent-skills pack with `.claude/agents/` and `.claude/references/`, and the `impeccable`, `ui-ux-pro-max`, `vercel-react-best-practices`, `frontend-design`, `minimalist-ui`, `web-design-guidelines` and `graphify` skills. Only `ponytail` stays, because the code convention uses its `// ponytail:` comment. They can be restored from the tag `v6.2.0`.
+
+### Fixed
+
+- Stale statements in the skills: API tokens stored as SHA-256 (removed in 6.0.0), v4 tables in production, the `_legacy/` folder, and missing entries for `/health`, `proxy.ts`, `lib/env.ts` and the cron guard.
+
 ## [6.2.0] - 2026-10-11
 
 ### Added
@@ -150,7 +166,8 @@ Rewrite around three questions: is the link alive, where is it, and how many cli
 - Security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`); `X-Powered-By` removed.
 - Type errors no longer ignored at build time (`ignoreBuildErrors` removed).
 
-[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v6.2.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v6.2.1...HEAD
+[6.2.1]: https://github.com/AlexGalhardo/links.example.com/compare/v6.2.0...v6.2.1
 [6.2.0]: https://github.com/AlexGalhardo/links.example.com/compare/v6.1.0...v6.2.0
 [6.1.0]: https://github.com/AlexGalhardo/links.example.com/compare/v6.0.0...v6.1.0
 [6.0.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.4.0...v6.0.0
