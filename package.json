@@ -1,11 +1,12 @@
 {
   "name": "links-afiliados",
-  "version": "6.1.0",
+  "version": "6.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "bun scripts/check-env.ts && next build",
+    "check-env": "bun scripts/check-env.ts",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",

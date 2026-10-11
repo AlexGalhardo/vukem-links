@@ -720,10 +720,20 @@ async function main(): Promise<void> {
 			await suiteLayout(context, baseUrl);
 			await suiteCleanup(page, context.request, anon);
 			suite("9. Robustness");
-			assert(
-				"unknown link id renders a 404 page",
-				(await context.request.get("/links/does-not-exist")).status() === 404,
-			);
+			// Owner rule: an address that is not a page goes to the start page instead of showing a 404.
+			for (const path of [
+				"/links/does-not-exist",
+				"/projects/does-not-exist",
+				"/no-such-page",
+				"/no/such/page",
+			]) {
+				const res = await context.request.get(path, { maxRedirects: 0 });
+				assert(
+					`${path} redirects to the start page`,
+					res.status() === 307 && res.headers().location === "/",
+					`status ${res.status()} location ${res.headers().location}`,
+				);
+			}
 			assert(
 				"no uncaught browser errors during the run",
 				pageErrors.length === 0,

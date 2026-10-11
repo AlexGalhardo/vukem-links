@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { LinkActions } from "@/components/link-actions";
 import { ClickMetrics, Panel, StatsPanels, StatusBadge } from "@/components/stats";
@@ -21,7 +21,8 @@ export default async function LinkPage({ params }: { params: Promise<{ id: strin
 	await requireSession();
 	const { id } = await params;
 	const detail = await getLinkDetail(id);
-	if (!detail) notFound();
+	// A link that does not exist (or was removed) goes back to the start page, like any unknown address.
+	if (!detail) redirect("/");
 	const { link, product, project, siblings, checks } = detail;
 	const stats = await getStats({ linkId: id });
 

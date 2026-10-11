@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.2.0] - 2026-10-11
+
+### Added
+
+- Environment check at the start of every build (`scripts/check-env.ts`, schema in `lib/env.ts`, zod 4): a malformed value always fails the build, and a production build fails when an essential variable is missing or the database is a local file. Other builds need no variable.
+
+### Changed
+
+- An address that is not a page redirects to the start page (`proxy.ts`), and so does a link or project that does not exist. `/link` and the API keep their 404 answers.
+
 ## [6.1.0] - 2026-10-11
 
 ### Added
@@ -140,7 +150,8 @@ Rewrite around three questions: is the link alive, where is it, and how many cli
 - Security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`); `X-Powered-By` removed.
 - Type errors no longer ignored at build time (`ignoreBuildErrors` removed).
 
-[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v6.1.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v6.2.0...HEAD
+[6.2.0]: https://github.com/AlexGalhardo/links.example.com/compare/v6.1.0...v6.2.0
 [6.1.0]: https://github.com/AlexGalhardo/links.example.com/compare/v6.0.0...v6.1.0
 [6.0.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.4.0...v6.0.0
 [5.4.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.3.0...v5.4.0

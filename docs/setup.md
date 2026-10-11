@@ -31,6 +31,8 @@ O que os quatro scripts fazem (lógica comum em `setups/_common.sh`):
 
 ## Variáveis de ambiente
 
+Todo build começa por `bun run check-env` (`lib/env.ts`, zod). Valor mal formado falha o build em qualquer ambiente. No build de produção (`VERCEL_ENV=production`) também falha se faltar uma essencial (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `CRON_SECRET`, `LINKS_API_KEY`) ou se o banco for um arquivo local. As demais são opcionais; as duas do Telegram só valem juntas. A mensagem cita o nome da variável, nunca o valor.
+
 | Variável | Obrigatória | Uso |
 | --- | --- | --- |
 | `TURSO_DATABASE_URL` | Não (padrão `file:./local.db`) | `libsql://…` em produção |

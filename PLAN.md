@@ -11,7 +11,7 @@ Decisões e motivos: [`docs/brainstorming.md`](docs/brainstorming.md). Mapa do c
 
 ## Estado atual
 
-- **Versão:** 6.1.0 em `main`, repositório `AlexGalhardo/links.example.com` (histórico recriado em 2026-10-11). Cada commit enviado ao remoto vira uma release com as notas do `CHANGELOG.md` ([`docs/workflows.md`](docs/workflows.md)).
+- **Versão:** 6.2.0 em `main`, repositório `AlexGalhardo/links.example.com` (histórico recriado em 2026-10-11). Cada commit enviado ao remoto vira uma release com as notas do `CHANGELOG.md` ([`docs/workflows.md`](docs/workflows.md)).
 - **Validado localmente:** `bun run ci` (typecheck, lint, testes unitários e de integração, build) em 2026-10-11; `bun qa.ts` (96 checks em 2026-10-11, antes da 6.1.0, que não mexe em código do app).
 - **Setup (6.1.0, validado em 2026-10-11 no Windows/Git Bash):** `setups/setup-windows-local.sh` de ponta a ponta em cópia limpa (cria `.env`, gera segredos, instala, migra, popula, sobe o servidor e o login responde 200; porta ocupada vira a próxima livre) e na pasta do projeto; `setups/setup-windows-with-docker.sh` com build da imagem, container no ar, `/health` 200 e re-execução idempotente. Os dois scripts `setup-unix-*` compartilham toda a lógica (`setups/_common.sh`) mas **não foram executados em Linux/macOS**: só `bash -n`.
 - **Produção:** `https://links.example.com` (projeto Vercel `links-example-com`, deploy pelo CLI `vercel deploy --prod`). Banco Turso novo criado pelo Vercel Marketplace em 2026-10-11, com as migrations da v5 e a seed (admin + projeto EletroRadar, 381 links). Os dados da v4 não foram migrados. A 6.1.0 não foi publicada na Vercel (só muda docs, `setups/` e `infra/`).

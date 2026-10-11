@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { LinksTable } from "@/components/links-table";
 import { ProjectTools } from "@/components/project-tools";
@@ -16,7 +16,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 	await requireSession();
 	const { slug } = await params;
 	const [project] = await db.select().from(projects).where(eq(projects.slug, slug));
-	if (!project) notFound();
+	// A project that does not exist (or was removed) goes back to the start page, like any unknown address.
+	if (!project) redirect("/");
 	const stats = await getStats({ projectId: project.id });
 
 	return (

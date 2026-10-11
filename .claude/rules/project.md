@@ -13,6 +13,7 @@
 - `products.page_url` precisa estar no domínio de `projects.base_url` (`sameHost`): é o destino do fallback e não pode virar open redirect.
 - A API dos sites usa uma chave única (`LINKS_API_KEY`), comparada em tempo constante (`hasBearer`). Um site só escreve no projeto da própria origem (`?site=`).
 - Nada de IP em `click_events`. Referer é guardado sem query string.
+- Variável de ambiente nova entra no schema de `lib/env.ts` (e em `ESSENTIAL` se a produção não roda sem ela) e em `.env.example`.
 - Segredos só em variável de ambiente. `.env*` é ignorado pelo git, exceto `.env.example`.
 
 ## Dados
