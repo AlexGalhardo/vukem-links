@@ -226,6 +226,32 @@ export function parseImport(text: string): ProductInput[] {
 	return importRows.parse(trimmed.startsWith("[") ? JSON.parse(trimmed) : csvToProducts(trimmed));
 }
 
+export interface ImportPlan {
+	/** Products that still have something new to add, with only their new, live links. */
+	rows: ProductInput[];
+	skippedExisting: number;
+	skippedDead: number;
+}
+
+/**
+ * Drops from an import the links the project already has and the ones that answered as dead.
+ * A product left without links is dropped too. `registered` maps externalId to its current URLs.
+ */
+export function planImport(rows: ProductInput[], registered: Map<string, Set<string>>, dead: Set<string>): ImportPlan {
+	const plan: ImportPlan = { rows: [], skippedExisting: 0, skippedDead: 0 };
+	for (const row of rows) {
+		const known = registered.get(row.externalId);
+		const links = row.links.filter((link) => {
+			if (known?.has(link.url)) plan.skippedExisting++;
+			else if (dead.has(link.url)) plan.skippedDead++;
+			else return true;
+			return false;
+		});
+		if (links.length) plan.rows.push({ ...row, links });
+	}
+	return plan;
+}
+
 export function nameFromExternalId(externalId: string): string {
 	const last = externalId.replace(/\/+$/, "").split("/").pop() ?? externalId;
 	return last.replace(/[-_]+/g, " ").trim() || externalId;

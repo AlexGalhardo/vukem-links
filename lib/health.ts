@@ -36,6 +36,18 @@ export async function isSiteLive(baseUrl: string): Promise<boolean> {
 	return statusCode !== undefined && statusCode < 500;
 }
 
+/** Of the given URLs, the ones that answered as broken. Blocked or timed-out probes are not counted as dead. */
+export async function findDeadUrls(urls: string[]): Promise<Set<string>> {
+	const dead = new Set<string>();
+	const queue = [...new Set(urls)];
+	async function worker(): Promise<void> {
+		for (let url = queue.shift(); url; url = queue.shift())
+			if (classifyProbe(url, await probe(url)) === "failed") dead.add(url);
+	}
+	await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+	return dead;
+}
+
 export interface CheckSummary {
 	checked: number;
 	ok: number;

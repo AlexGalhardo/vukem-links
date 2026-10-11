@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { type AffiliateLink, affiliateLinks, linkChecks } from "@/db/schema";
 import { upsertProducts } from "@/lib/data";
 import { db } from "@/lib/db";
-import { checkLinks, isSiteLive } from "@/lib/health";
+import { checkLinks, findDeadUrls, isSiteLive } from "@/lib/health";
 import { DEAD_AFTER_FAILURES } from "@/lib/links";
 import { createProject, mockFetch } from "@/test/helpers";
 
@@ -175,5 +175,36 @@ describe("isSiteLive", () => {
 			throw new DOMException("timed out", "TimeoutError");
 		}).restore;
 		expect(await isSiteLive("https://site.example.com")).toBe(false);
+	});
+});
+
+describe("findDeadUrls", () => {
+	test("returns only the URLs that answered as broken, probing each distinct URL once", async () => {
+		const seen: string[] = [];
+		restore = mockFetch((url) => {
+			seen.push(url);
+			if (url.endsWith("/gone")) return { status: 404 };
+			if (url.endsWith("/blocked")) return { status: 403 };
+			if (url.endsWith("/home")) return { status: 200, finalUrl: "https://store.example.com/" };
+			if (url.endsWith("/down")) throw new TypeError("getaddrinfo ENOTFOUND");
+			if (url.endsWith("/slow")) throw new DOMException("timed out", "TimeoutError");
+			return { status: 200 };
+		}).restore;
+		const base = "https://store.example.com";
+		const dead = await findDeadUrls(
+			["ok", "gone", "gone", "blocked", "home", "down", "slow"].map((path) => `${base}/${path}`),
+		);
+		expect([...dead].sort()).toEqual([`${base}/down`, `${base}/gone`, `${base}/home`]);
+		expect(seen).toHaveLength(6);
+	});
+
+	test("no URLs, no requests", async () => {
+		let fetched = 0;
+		restore = mockFetch(() => {
+			fetched++;
+			return { status: 200 };
+		}).restore;
+		expect((await findDeadUrls([])).size).toBe(0);
+		expect(fetched).toBe(0);
 	});
 });

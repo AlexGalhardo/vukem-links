@@ -8,6 +8,7 @@ import {
 	nextHealth,
 	parseImport,
 	pickLink,
+	planImport,
 	productInput,
 	toDevice,
 	weeklyReportMessage,
@@ -191,5 +192,38 @@ describe("weeklyReportMessage", () => {
 	test("says so when there is no project", () => {
 		expect(weeklyReportMessage([], 7)).toContain("Nenhum projeto cadastrado.");
 		expect(weeklyReportMessage([], 7)).toContain("Total: 0");
+	});
+});
+
+describe("planImport", () => {
+	const row = (id: string, ...urls: string[]) => ({ externalId: id, links: urls.map((url) => ({ url })) });
+
+	test("keeps only links that are new to the product and not dead", () => {
+		const plan = planImport(
+			[row("a", "https://x.example/1", "https://x.example/2", "https://x.example/3")],
+			new Map([["a", new Set(["https://x.example/1"])]]),
+			new Set(["https://x.example/3"]),
+		);
+		expect(plan).toEqual({ rows: [row("a", "https://x.example/2")], skippedExisting: 1, skippedDead: 1 });
+	});
+
+	test("drops a product left without links and counts a link that is both known and dead once", () => {
+		const plan = planImport(
+			[row("a", "https://x.example/1"), row("b", "https://x.example/dead"), row("c", "https://x.example/new")],
+			new Map([["a", new Set(["https://x.example/1"])]]),
+			new Set(["https://x.example/1", "https://x.example/dead"]),
+		);
+		expect(plan.rows.map((r) => r.externalId)).toEqual(["c"]);
+		expect(plan).toMatchObject({ skippedExisting: 1, skippedDead: 1 });
+	});
+
+	test("the same URL on another product is not treated as already registered", () => {
+		const plan = planImport(
+			[row("b", "https://x.example/1")],
+			new Map([["a", new Set(["https://x.example/1"])]]),
+			new Set(),
+		);
+		expect(plan).toMatchObject({ skippedExisting: 0, skippedDead: 0 });
+		expect(plan.rows).toHaveLength(1);
 	});
 });

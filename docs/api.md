@@ -104,3 +104,13 @@ Página do projeto → "Importar JSON/CSV". Aceita:
 - **CSV** com cabeçalho `externalId,url,name,pageUrl,category,store`. Só `externalId` e `url` são obrigatórios. Linhas com o mesmo `externalId` viram um produto com vários links, na ordem do arquivo.
 
 Limite: 5000 produtos por importação. Todo produto precisa de ao menos um link, e o site do projeto precisa estar no ar.
+
+O arquivo exportado pelo painel de um site ("Exportar links" em JSON ou CSV) usa exatamente esse formato e pode ser enviado aqui.
+
+Antes de gravar, a importação confere cada link novo:
+
+- Link que o produto já tem é ignorado.
+- Link que responde como morto (erro HTTP, host inexistente, redirect para a home da loja) é ignorado. Bloqueio de robô (`401`, `403`, `429`) e timeout não contam como morto.
+- Produto que fica sem nenhum link não é criado.
+
+O resultado informa quantos links entraram e quantos foram ignorados por cada motivo.

@@ -430,16 +430,31 @@ async function suiteProjectApi(page: Page, api: APIRequestContext, anon: APIRequ
 	await guarded("import", async () => {
 		await page.goto(`/projects/${PROJECT.slug}`);
 		await page.getByRole("button", { name: "Importar JSON/CSV" }).click();
-		const csv = `externalId,url,name\n${PAGE}/produto/csv,https://s.shopee.com.br/qa,"Fone, CSV"\n`;
+		// The import probes every new link and skips the dead ones, so the kept link must be a live address.
+		const live = "https://example.com/";
+		const dead = `https://dead-${RUN}.example.invalid/p`;
+		const csv = `externalId,url,name\n${PAGE}/produto/csv,${live},"Fone, CSV"\n${PAGE}/produto/morto,${dead},Morto\n`;
 		await page.getByLabel("Conteúdo JSON ou CSV").fill(csv);
 		await page.getByRole("button", { name: "Importar", exact: true }).click();
-		await page.getByText("1 produto(s) e 1 link(s) importados, 0 erro(s)").waitFor();
-		const row = (await ownLinks(api)).find((l) => l.externalId.endsWith("/produto/csv"));
+		await page
+			.getByText("1 produto(s) e 1 link(s) importados; ignorados: 0 já cadastrado(s), 1 morto(s); 0 erro(s)")
+			.waitFor({ timeout: 30_000 });
+		const rows = await ownLinks(api);
+		const row = rows.find((l) => l.externalId.endsWith("/produto/csv"));
 		assert(
 			"CSV import creates the product with a quoted name",
 			row?.productName === "Fone, CSV",
 			`name=${row?.productName}`,
 		);
+		assert("a dead link is not imported", !rows.some((l) => l.externalId.endsWith("/produto/morto")));
+
+		await page.getByRole("button", { name: "Importar JSON/CSV" }).click();
+		await page.getByLabel("Conteúdo JSON ou CSV").fill(csv);
+		await page.getByRole("button", { name: "Importar", exact: true }).click();
+		await page
+			.getByText("0 produto(s) e 0 link(s) importados; ignorados: 1 já cadastrado(s), 1 morto(s); 0 erro(s)")
+			.waitFor({ timeout: 30_000 });
+		assert("importing the same file again adds nothing", (await ownLinks(api)).length === rows.length);
 	});
 }
 

@@ -61,7 +61,7 @@ export function ProjectTools({ id, name }: { id: string; name: string }): ReactN
 			setImporting(false);
 			setText("");
 		}
-		return `${summary.productsCreated} produto(s) e ${summary.linksAdded} link(s) importados, ${summary.errors.length} erro(s)`;
+		return `${summary.productsCreated} produto(s) e ${summary.linksAdded} link(s) importados; ignorados: ${summary.skippedExisting} já cadastrado(s), ${summary.skippedDead} morto(s); ${summary.errors.length} erro(s)`;
 	});
 	const rotate = useAction(rotateToken, (result) => {
 		setToken(result.token);
@@ -88,8 +88,9 @@ export function ProjectTools({ id, name }: { id: string; name: string }): ReactN
 
 			<Modal title="Importar produtos e links" open={importing} onOpenChange={setImporting}>
 				<p className="text-muted">
-					Cole um array JSON (formato novo ou o <code>seed.json</code> da v4) ou um CSV com cabeçalho{" "}
-					<code>externalId,url,name,pageUrl,category,store</code>. Produtos e links já existentes são
+					Envie o arquivo exportado por um site (JSON ou CSV), ou cole um array JSON (formato novo ou o{" "}
+					<code>seed.json</code> da v4) ou um CSV com cabeçalho{" "}
+					<code>externalId,url,name,pageUrl,category,store</code>. Links já cadastrados e links mortos são
 					ignorados.
 				</p>
 				<input

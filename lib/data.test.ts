@@ -8,6 +8,7 @@ import {
 	getStats,
 	hashToken,
 	listLinks,
+	registeredUrls,
 	rotateApiToken,
 	syncProducts,
 	upsertProducts,
@@ -271,6 +272,21 @@ describe("getStats", () => {
 		const empty = await createProject();
 		const stats = await getStats({ projectId: empty.id });
 		expect(stats).toMatchObject({ clicks: 0, botClicks: 0, lostClicks: 0, legacyClicks: 0, byDevice: [] });
+	});
+});
+
+describe("registeredUrls", () => {
+	test("maps each product of the project to its URLs and ignores other projects", async () => {
+		const project = await createProject();
+		const other = await createProject();
+		await upsertProducts(project, [
+			{ externalId: `${project.baseUrl}/a`, links: [{ url: ML }, { url: AMZ }] },
+			{ externalId: `${project.baseUrl}/b`, links: [{ url: AMZ }] },
+		]);
+		await upsertProducts(other, [{ externalId: `${other.baseUrl}/x`, links: [{ url: ML }] }]);
+		const urls = await registeredUrls(project.id);
+		expect([...urls.keys()].sort()).toEqual([`${project.baseUrl}/a`, `${project.baseUrl}/b`]);
+		expect([...(urls.get(`${project.baseUrl}/a`) ?? [])].sort()).toEqual([AMZ, ML].sort());
 	});
 });
 

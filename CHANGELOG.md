@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.4.0] - 2026-10-11
+
+### Changed
+
+- The JSON/CSV import of a project now checks every new link before saving: links the project already has and links that answer as dead are skipped, and the result says how many of each.
+
 ## [5.3.0] - 2026-10-11
 
 ### Added
@@ -97,7 +103,8 @@ Rewrite around three questions: is the link alive, where is it, and how many cli
 - Security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`); `X-Powered-By` removed.
 - Type errors no longer ignored at build time (`ignoreBuildErrors` removed).
 
-[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v5.3.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v5.4.0...HEAD
+[5.4.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.3.0...v5.4.0
 [5.3.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.2.0...v5.3.0
 [5.2.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.1.0...v5.2.0
 [5.1.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.0.0...v5.1.0

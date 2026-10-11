@@ -4,10 +4,10 @@ import { eq, inArray, min } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { affiliateLinks, projects } from "@/db/schema";
-import { rotateApiToken, type UpsertSummary, upsertProducts } from "@/lib/data";
+import { registeredUrls, rotateApiToken, type UpsertSummary, upsertProducts } from "@/lib/data";
 import { db } from "@/lib/db";
-import { type CheckSummary, checkLinks, isSiteLive } from "@/lib/health";
-import { detectStore, isPublicHttpUrl, parseImport, productInput } from "@/lib/links";
+import { type CheckSummary, checkLinks, findDeadUrls, isSiteLive } from "@/lib/health";
+import { detectStore, isPublicHttpUrl, parseImport, planImport, productInput } from "@/lib/links";
 import { requireSession } from "@/lib/session";
 
 export type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
@@ -93,13 +93,27 @@ export async function saveProduct(projectId: string, input: unknown): Promise<Re
 	}
 }
 
-export async function importProducts(projectId: string, text: string): Promise<Result<{ summary: UpsertSummary }>> {
+export interface ImportSummary extends UpsertSummary {
+	skippedExisting: number;
+	skippedDead: number;
+}
+
+/** Imports a file exported by a site (or typed by hand): only links that are new to the project and not dead. */
+export async function importProducts(projectId: string, text: string): Promise<Result<{ summary: ImportSummary }>> {
 	try {
 		await requireSession();
 		const project = await findProject(projectId);
 		const rows = parseImport(text);
 		await requireLive(project.baseUrl);
-		const summary = await upsertProducts(project, rows);
+		const registered = await registeredUrls(project.id);
+		const fresh = planImport(rows, registered, new Set());
+		const dead = await findDeadUrls(fresh.rows.flatMap((row) => row.links.map((link) => link.url)));
+		const plan = planImport(rows, registered, dead);
+		const summary = {
+			...(await upsertProducts(project, plan.rows)),
+			skippedExisting: plan.skippedExisting,
+			skippedDead: plan.skippedDead,
+		};
 		revalidatePath("/", "layout");
 		return { ok: true, summary };
 	} catch (error) {

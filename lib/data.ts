@@ -109,6 +109,18 @@ export async function upsertProducts(project: Project, inputs: ProductInput[]): 
 	return summary;
 }
 
+/** URLs each product of the project already has, keyed by externalId. */
+export async function registeredUrls(projectId: string): Promise<Map<string, Set<string>>> {
+	const rows = await db
+		.select({ externalId: products.externalId, url: affiliateLinks.url })
+		.from(affiliateLinks)
+		.innerJoin(products, eq(products.id, affiliateLinks.productId))
+		.where(eq(products.projectId, projectId));
+	const byProduct = new Map<string, Set<string>>();
+	for (const row of rows) byProduct.set(row.externalId, (byProduct.get(row.externalId) ?? new Set()).add(row.url));
+	return byProduct;
+}
+
 export interface SyncSummary extends UpsertSummary {
 	productsUpdated: number;
 	productsRemoved: number;
