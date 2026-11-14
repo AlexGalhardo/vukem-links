@@ -442,3 +442,17 @@ func (s *Service) RegisteredURLs(ctx context.Context, projectID int64) (map[stri
 
 	return out, nil
 }
+
+// EnsureProject returns the project with the slug, creating it when missing.
+func (s *Service) EnsureProject(ctx context.Context, name, slug, baseURL string) (models.Project, error) {
+	p, err := orm.QueryOf[models.Project](s.DB).Where("slug", slug).First(ctx)
+	if err == nil {
+		return p, nil
+	}
+
+	if !errors.Is(err, orm.ErrNotFound) {
+		return p, err
+	}
+
+	return s.CreateProject(ctx, name, slug, baseURL)
+}
