@@ -115,13 +115,21 @@ func TestEveryDashboardActionRequiresTheSession(t *testing.T) {
 	w.seed(t, map[string][]string{productID: {"https://amzn.to/1"}})
 
 	anon := w.app.Client(t).Inertia("")
-	body := map[string]any{"ids": []int{1}, "all": true, "url": "https://amzn.to/9", "priority": 3, "name": "x", "slug": "x",
-		"baseUrl": siteURL, "text": "[]", "externalId": "x", "urls": "https://amzn.to/1"}
+	body := map[string]any{
+		"ids": []int{1}, "all": true, "url": "https://amzn.to/9", "priority": 3, "name": "x", "slug": "x",
+		"baseUrl": siteURL, "text": "[]", "externalId": "x", "urls": "https://amzn.to/1",
+	}
 
 	for _, r := range []struct{ method, path string }{
-		{"POST", "/links/check"}, {"POST", "/links/delete"}, {"PUT", "/links/1"}, {"DELETE", "/links/1"},
-		{"POST", "/links/1/promote"}, {"POST", "/projects"}, {"DELETE", "/projects/1"},
-		{"POST", "/projects/1/products"}, {"POST", "/projects/1/import"},
+		{"POST", "/links/check"},
+		{"POST", "/links/delete"},
+		{"PUT", "/links/1"},
+		{"DELETE", "/links/1"},
+		{"POST", "/links/1/promote"},
+		{"POST", "/projects"},
+		{"DELETE", "/projects/1"},
+		{"POST", "/projects/1/products"},
+		{"POST", "/projects/1/import"},
 	} {
 		var status int
 
