@@ -101,8 +101,9 @@ jobs:
       # The whole history, with the rules in .betterleaks.toml. Validation
       # against provider APIs stays off (it would need --validation).
       # The report step prints the rule, file, line and commit. It does not
-      # print the matched value. A reviewed false positive goes in
-      # .betterleaksignore as commit:file:rule:line.
+      # print the matched value. A reviewed false positive goes in a
+      # path-based [[allowlists]] in .betterleaks.toml: .betterleaksignore
+      # fingerprints carry the commit hash and break after a rebase merge.
       - name: betterleaks
         run: betterleaks git . --no-banner --redact --report-format json --report-path betterleaks.json
       - name: print findings
