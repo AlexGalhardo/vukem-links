@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AlexGalhardo/vukem"
 	"github.com/AlexGalhardo/vukem/database"
 	"github.com/AlexGalhardo/vukem/vukemtest"
 
@@ -73,14 +74,18 @@ type world struct {
 	svc *catalog.Service
 }
 
+// newBuild builds the app with the fake network in place of HTTP and Telegram.
+func newBuild(f *fakeNet) vukem.BuildFunc {
+	bot := &telegram.Client{Token: "123:test", ChatID: "-1", HTTP: &http.Client{Transport: f}}
+
+	return bootstrap.NewWith(deps.Overrides{HTTP: &http.Client{Transport: f}, Telegram: bot})
+}
+
 func newWorld(t *testing.T) *world {
 	t.Helper()
 
 	f := &fakeNet{}
-	bot := &telegram.Client{Token: "123:test", ChatID: "-1", HTTP: &http.Client{Transport: f}}
-
-	app := vukemtest.New(t, bootstrap.NewWith(deps.Overrides{HTTP: &http.Client{Transport: f}, Telegram: bot}),
-		vukemtest.Options{Env: map[string]string{"LINKS_API_KEY": apiKey}})
+	app := vukemtest.New(t, newBuild(f), vukemtest.Options{Env: map[string]string{"LINKS_API_KEY": apiKey}})
 
 	db, err := app.DB()
 	if err != nil {
