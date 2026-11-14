@@ -1,0 +1,38 @@
+// Package pages declares the props of every Inertia page. Controllers render
+// them with pages.<Page>.Render(c, props), inertia.Config lists them in
+// Pages, and vukem codegen:pages writes resources/js/page-props.ts from them,
+// so the page components and the Go controllers share one declaration.
+package pages
+
+import (
+	"time"
+
+	"github.com/AlexGalhardo/vukem/inertia"
+)
+
+// Shared is the props every page receives (inertia.Config.SharedType).
+type Shared struct {
+	AppName string      `json:"appName"`
+	Auth    *SharedAuth `json:"auth"`
+}
+
+// SharedAuth is the signed-in user, or null.
+type SharedAuth struct {
+	User *SharedUser `json:"user"`
+}
+
+// SharedUser is the part of the user every page receives.
+type SharedUser struct {
+	ID              int64      `json:"id"`
+	Name            string     `json:"name"`
+	Email           string     `json:"email"`
+	EmailVerifiedAt *time.Time `json:"email_verified_at"`
+}
+
+// Home is the landing page.
+var Home = inertia.Define[struct{}]("Home")
+
+// All lists the typed pages for inertia.Config.Pages.
+func All() []inertia.PageInfo {
+	return []inertia.PageInfo{Home.Info()}
+}
