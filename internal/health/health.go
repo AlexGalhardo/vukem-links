@@ -288,3 +288,34 @@ func (c *Checker) checkOne(ctx context.Context, link models.AffiliateLink) (rule
 
 	return outcome, next.Status == models.StatusDead && !wasDead, nil
 }
+
+// CheckAll checks every link: it repeats the batch run, least recently
+// checked first, until as many links were checked as exist.
+func (c *Checker) CheckAll(ctx context.Context) (Summary, error) {
+	total, err := orm.QueryOf[models.AffiliateLink](c.DB).Count(ctx)
+	if err != nil {
+		return Summary{}, fmt.Errorf("counting links: %w", err)
+	}
+
+	var sum Summary
+
+	for sum.Checked < int(total) {
+		part, err := c.Check(ctx, nil)
+
+		sum.Checked += part.Checked
+		sum.OK += part.OK
+		sum.Failed += part.Failed
+		sum.Inconclusive += part.Inconclusive
+		sum.Died += part.Died
+
+		if err != nil {
+			return sum, err
+		}
+
+		if part.Checked == 0 {
+			break
+		}
+	}
+
+	return sum, nil
+}
