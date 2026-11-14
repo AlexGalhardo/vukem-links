@@ -1,0 +1,35 @@
+# The app serves HTTP directly (no proxy in front). Put your own TLS-terminating
+# proxy (Caddy, never nginx) or the platform router in front for production.
+#
+#   APP_KEY=$(go run ./cmd/app key:generate) ADMIN_PASSWORD=... LINKS_API_KEY=... docker compose up -d --wait
+#
+# The entrypoint migrates the database and creates the admin before serving;
+# both steps are safe to repeat. Data lives in the links-data volume.
+services:
+  app:
+    build: .
+    image: vukem-links:local
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      APP_ENV: production
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      APP_KEY: ${APP_KEY:?set APP_KEY (go run ./cmd/app key:generate)}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD (8+ characters)}
+      LINKS_API_KEY: ${LINKS_API_KEY:?set LINKS_API_KEY (the key every site sends)}
+      TELEGRAM_BOT_HTTP_TOKEN: ${TELEGRAM_BOT_HTTP_TOKEN:-}
+      TELEGRAM_BOT_CHANNEL_ID: ${TELEGRAM_BOT_CHANNEL_ID:-}
+    entrypoint: ["/bin/sh", "-c", "/app/app migrate && /app/app admin:create && exec /app/app serve"]
+    volumes:
+      - links-data:/app/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  links-data:
