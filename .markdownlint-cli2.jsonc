@@ -26,6 +26,8 @@
     "**/dist/**",
     "**/out/**",
     "**/.next/**",
-    ".claude/**"
+    ".claude/**",
+    "docs/PROMPT SEED.md",
+    ".github/pull_request_template.md"
   ]
 }

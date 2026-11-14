@@ -2,7 +2,7 @@
 
 ## The project's own skills
 
-`links-secure-endpoint`, `links-local-verification`, `links-db-change` and `links-release` were written in this repository for links-afiliados. When to use each: [`.claude/agents.md`](../agents.md#skills).
+`links-secure-endpoint`, `links-local-verification`, `links-db-change` and `links-release` were written in this repository for vukem-links. When to use each: [`.claude/agents.md`](../agents.md#skills).
 
 ## Third-party skills
 

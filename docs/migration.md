@@ -1,0 +1,53 @@
+# Migração do Next.js/Turso para o vukem
+
+A reescrita (7.0.0) troca o banco: de Turso (libSQL, ids UUID, datas em milissegundos) para um arquivo SQLite com o schema novo (ids inteiros, datas ISO). Os dados passam por dois comandos do app, ambos seguros de repetir.
+
+## Do `seed.json`
+
+```bash
+app import:seed                    # padrão: -file seed.json -name EletroRadar -slug eletroradar -url https://example.com
+```
+
+Aceita o formato da API e o da v4 (`{ id, category, mercadolivreUrl, amazonUrl, shopeeUrl }`). Cria o projeto se faltar e só acrescenta o que ainda não existe. Não checa se o site responde: é carga de dados, não cadastro pela API.
+
+## Do banco em produção da versão anterior
+
+1. Exporte o banco Turso atual para um arquivo SQLite. **Operação no banco de produção: só com o dono presente.**
+
+   ```bash
+   turso db shell <db> .dump > legacy.sql && sqlite3 legacy.db < legacy.sql
+   ```
+
+   (ou `turso db export <db>`, quando a versão do CLI tiver o comando).
+2. Com o app novo migrado (`app migrate`):
+
+   ```bash
+   app import:legacy -from legacy.db
+   ```
+
+O comando abre o arquivo antigo **somente leitura** e escreve tudo em uma transação:
+
+| Dado | Regra |
+| --- | --- |
+| Projetos | Casados por `slug` |
+| Produtos | Casados por `external_id` (o identificador público não muda) |
+| Links | Casados por produto + URL; mantêm status, falhas, última checagem e `legacy_clicks` |
+| Cliques e checagens | Só entram em um banco que ainda não tem nenhum (não há chave natural; uma segunda rodada duplicaria). Dispositivo, SO, navegador, país, referer, flag de bot e data são preservados |
+
+Rodar de novo só acrescenta o que faltar e avisa que pulou cliques e checagens. As datas de milissegundos viram ISO 8601 UTC.
+
+## Não migrado
+
+- A conta de admin: recrie com `app admin:create`.
+- Sessões e o rate limit do Better Auth.
+
+## Verificação
+
+Compare contagens antes e depois:
+
+```sql
+select (select count(*) from projects), (select count(*) from products), (select count(*) from affiliate_links),
+       (select count(*) from click_events), (select count(*) from link_checks);
+```
+
+O teste `internal/legacy` cobre o caminho com um banco no schema do Drizzle (6.2.1) e confere campos, vínculos entre cliques e links, datas e idempotência. A importação a partir de um export real do Turso **não foi executada**.

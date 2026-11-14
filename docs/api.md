@@ -109,7 +109,7 @@ curl -X PUT "https://links.exemplo.com/api/v1/links?site=https://app.meuprojeto.
 GET /health
 ```
 
-Pública e legível de qualquer origem (CORS). `200 { "status": "ok" }` quando o dashboard e o banco respondem; `503` caso contrário. Os sites usam para decidir se o botão passa pelo redirect ou vai direto para a loja.
+Pública e legível de qualquer origem (`Access-Control-Allow-Origin: *`), sem sessão nem cookie. `200 { "status": "ok" }` quando o dashboard e o banco respondem; `503` caso contrário. Os sites usam para decidir se o botão passa pelo redirect ou vai direto para a loja.
 
 ## Importação pelo dashboard
 

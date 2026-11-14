@@ -1,63 +1,63 @@
 # Setup
 
-Guia curto para subir o app. O passo a passo completo, com a verificação de cada etapa (incluindo GitHub e Vercel), está em [`agent-setup.md`](agent-setup.md).
+## Requisitos
 
-Requisito: [Bun](https://bun.sh) 1.4+. Para Docker: Docker 24+ com Compose v2. No Windows, os scripts rodam no **Git Bash**.
+- Go 1.27 e o CLI do vukem: `go install github.com/AlexGalhardo/vukem/cmd/vukem@v0.43.0`.
+- Bun 1.4 (só para o frontend: Vite, Tailwind, Inertia).
+- Docker (opcional, para a imagem e o `compose.yaml`).
+- `golangci-lint` 2.x para o lint.
 
-## Um comando
+## Local
 
-| Ambiente | Comando | Resultado |
-| --- | --- | --- |
-| Linux / macOS | `bash setups/setup-unix-local.sh` | Cria `.env`, instala, migra, popula, sobe `bun run dev` |
-| Windows (Git Bash) | `bash setups/setup-windows-local.sh` | Idem |
-| Linux / macOS + Docker | `bash setups/setup-unix-with-docker.sh` | Build de produção em container, SQLite em volume, em background |
-| Windows (Git Bash) + Docker | `bash setups/setup-windows-with-docker.sh` | Idem |
+```bash
+cp .env.example .env
+vukem key:generate            # escreve APP_KEY no .env
+# edite .env: ADMIN_PASSWORD (8+ caracteres) e LINKS_API_KEY (openssl rand -hex 32)
+bun install
+vukem migrate                 # cria storage/database.sqlite
+vukem admin:create            # a conta de admin (idempotente)
+vukem import:seed             # opcional: seed.json (381 produtos do EletroRadar)
+vukem serve                   # http://localhost:3000
+```
 
-App em <http://localhost:3000> (ou na porta que o script anunciar). Login: `ADMIN_EMAIL` / `ADMIN_PASSWORD` do `.env` (padrão do `.env.example`: `admin@example.com` / `change-me-please`).
-
-O que os quatro scripts fazem (lógica comum em `setups/_common.sh`):
-
-- Conferem as ferramentas (Bun; Docker, Compose e daemon rodando nos de Docker) e dizem como instalar o que falta.
-- Criam `.env` a partir de `.env.example` se não existir e geram `BETTER_AUTH_SECRET`, `CRON_SECRET` e `LINKS_API_KEY` quando estão vazios ou com o placeholder `change-me…`. Valor já preenchido nunca é sobrescrito e nenhum segredo é impresso.
-- Porta ocupada: sem `PORT`/`APP_PORT` definido, usam a próxima livre a partir da 3000 e avisam; com a variável definida e a porta ocupada, param com erro.
-- Rodam migrations e seed. Os scripts locais se recusam a rodar se `TURSO_DATABASE_URL` não for `file:`: nunca tocam banco remoto.
-- São idempotentes e saem com código diferente de zero, com a etapa que falhou, em qualquer erro.
-
-| Opção | Efeito |
-| --- | --- |
-| `--no-start` ou `SETUP_SKIP_START=1` | Prepara tudo sem subir o servidor (nos de Docker: só faz o build da imagem) |
-| `PORT=3411` | Porta do `bun run dev` (scripts locais) |
-| `APP_PORT=3310` | Porta do host para o container (scripts de Docker) |
+`vukem serve` recompila o Go a cada mudança e roda o Vite com reload. Depois de mudar `app/pages/pages.go`, `vukem codegen` regenera `resources/js/page-props.ts` (o teste `TestEveryPageIsTyped` confere que nenhuma página ficou sem tipo).
 
 ## Variáveis de ambiente
 
-Todo build começa por `bun run check-env` (`lib/env.ts`, zod). Valor mal formado falha o build em qualquer ambiente. No build de produção (`VERCEL_ENV=production`) também falha se faltar uma essencial (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `CRON_SECRET`, `LINKS_API_KEY`) ou se o banco for um arquivo local. As demais são opcionais; as duas do Telegram só valem juntas. A mensagem cita o nome da variável, nunca o valor.
-
-| Variável | Obrigatória | Uso |
+| Variável | Obrigatória | Para quê |
 | --- | --- | --- |
-| `TURSO_DATABASE_URL` | Não (padrão `file:./local.db`) | `libsql://…` em produção |
-| `TURSO_AUTH_TOKEN` | Em produção | Token do Turso |
-| `BETTER_AUTH_SECRET` | Sim | Assina sessões. 32+ bytes aleatórios |
-| `BETTER_AUTH_URL` | Sim | URL pública do app. Precisa bater com a porta, senão o login é recusado |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Para `db:seed` | Conta admin (senha com 8+ caracteres) |
-| `LINKS_API_KEY` | Em produção | Chave que os sites enviam para registrar links (`/api/v1/links`). Sem ela a API recusa tudo. O `qa.ts` também precisa dela |
-| `CRON_SECRET` | Em produção | Protege `/api/cron/health` e `/api/cron/weekly` |
-| `TELEGRAM_BOT_HTTP_TOKEN`, `TELEGRAM_BOT_CHANNEL_ID` | Não | Bot do Telegram: alerta de link morto, log de cada clique redirecionado e relatório semanal de cliques. Vazias = nada é enviado |
+| `APP_KEY` | Sim | Chave do app (sessões, cookies). `vukem key:generate` |
+| `APP_ENV` | Não | `development` (padrão) ou `production` (a imagem já define) |
+| `APP_URL` | Em produção | URL pública. Com `https://` o cookie de sessão é `Secure` |
+| `PORT` | Não | Porta HTTP (padrão 3000) |
+| `DATABASE_URL` | Não | `file:storage/database.sqlite` (padrão). A imagem monta `/app/storage` como volume |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Para `admin:create` | Conta do administrador; a senha tem 8+ caracteres |
+| `LINKS_API_KEY` | Sim (sem ela a API dos sites responde 401) | Chave única dos sites. Vai em `LINKS_DASHBOARD_TOKEN` de cada site |
+| `TELEGRAM_BOT_HTTP_TOKEN` / `TELEGRAM_BOT_CHANNEL_ID` | Não | Alertas de link morto, log de cada clique e relatório semanal. Vazio = nada é enviado |
+| `SCHEDULE_IN_SERVE` | Não | `false` desliga o scheduler dentro do `serve` (use `schedule:work` ou cron) |
+
+Segredos só em variável de ambiente; `.env*` é ignorado pelo git, exceto `.env.example`.
 
 ## Docker
 
-Os arquivos ficam em [`infra/`](../infra): `Dockerfile` (imagem `oven/bun` com tag fixa, multi-stage, usuário não-root) e `docker-compose.yml`. O contexto de build é a raiz do repositório, por isso o `.dockerignore` fica na raiz. O compose sobe só o app; o banco é um arquivo SQLite no volume `data` e o container nunca usa banco remoto. É para teste local, não produção.
-
-Os segredos vêm do `.env` da raiz (`--env-file .env`). As variáveis do Telegram não são repassadas ao container, para o ambiente de teste não escrever no canal real.
+O `Dockerfile` tem três estágios com imagens de tag fixa (Bun para os assets, Go para o binário estático, Alpine para rodar como usuário `app`). O app serve HTTP direto na porta 3000; não há proxy no compose. Para HTTPS use o roteador da plataforma ou um Caddy na frente (nunca nginx).
 
 ```bash
-docker compose -f infra/docker-compose.yml --env-file .env logs -f app   # logs
-docker compose -f infra/docker-compose.yml --env-file .env down          # para (mantém o volume)
-docker compose -f infra/docker-compose.yml --env-file .env down -v       # para e APAGA o banco
+export APP_KEY="$(go run ./cmd/app key:generate)" ADMIN_PASSWORD=... LINKS_API_KEY=...
+docker compose up -d --wait
+docker compose exec app /app/app import:seed -file /tmp/seed.json   # depois de `docker compose cp seed.json app:/tmp/seed.json`
+docker compose down -v
 ```
 
-A conta admin é criada na primeira subida do volume. Trocar `ADMIN_PASSWORD` depois exige `down -v` (ou o procedimento de [`auth.md`](auth.md)).
+O entrypoint do compose roda `migrate`, `admin:create` e `serve` (as duas primeiras são seguras de repetir). `bash scripts/smoke.sh` automatiza build, subida, checagem do contrato público e `down -v`.
 
-## Produção
+## Testes
 
-Deploy na Vercel, banco Turso e crons: [`workflows.md`](workflows.md#deploy-vercel).
+```bash
+go vet ./... && go test ./...        # sem rede: o HTTP das checagens e o Telegram são falsos
+golangci-lint run
+bun run typecheck && bun run lint:js && bun run build
+bun run e2e                          # Playwright: constrói tudo e sobe o app com banco novo
+```
+
+Os testes Go usam `vukemtest` (SQLite em memória, migrations aplicadas) e `bootstrap.NewWith(deps.Overrides{...})` para trocar o cliente HTTP e o Telegram por fakes.
