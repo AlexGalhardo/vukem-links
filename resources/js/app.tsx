@@ -1,10 +1,10 @@
 import { createInertiaApp } from "@inertiajs/react";
 
-import AppLayout from "./layouts/AppLayout";
+import DashboardLayout from "./layouts/DashboardLayout";
+import GuestLayout from "./layouts/GuestLayout";
 
 // Dark mode follows the "dark" class on <html>: the saved choice
-// (localStorage.theme = "dark" | "light") or the system preference. A theme
-// toggle flips the class and saves it.
+// (localStorage.theme = "dark" | "light") or the system preference.
 try {
   const theme = localStorage.getItem("theme");
   const dark = theme ? theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
@@ -14,15 +14,11 @@ try {
 }
 
 // The @inertiajs/vite plugin resolves pages from ./pages and mounts the app.
-// The nonce lets the progress bar styles through the CSP.
-// It mounts on #app, the default inertia.Config.RootID; when you change
-// RootID, pass the same value here as `id`.
+// The login and the error page are the only ones without the sidebar.
 createInertiaApp({
-  layout: () => AppLayout,
+  layout: (name: string) => (name === "Auth/Login" || name === "Error" ? GuestLayout : DashboardLayout),
   nonce: document.querySelector<HTMLMetaElement>('meta[property="csp-nonce"]')?.nonce,
-  progress: { color: "#4f46e5" },
+  progress: { color: "#737373" },
 }).finally(() => {
-  // app.html sets data-hydrating; style it (button:disabled, a pending hint)
-  // for the gap before the app mounts.
   document.documentElement.removeAttribute("data-hydrating");
 });
