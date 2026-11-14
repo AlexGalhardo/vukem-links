@@ -21,6 +21,14 @@ description = "vukem API token (auth.Tokens, default prefix vk_)"
 regex = '''\bvk_[A-Z2-7]{26}\.[A-Z2-7]{26}\b'''
 keywords = ["vk_"]
 
+# The site and dashboard domains were removed from the files and the history
+# (2026-11-14); this keeps them from coming back in any commit.
+[[rules]]
+id = "removed-domain"
+description = "A domain removed from this repository and its history"
+regex = '''(?i)\b(?:eletroradar\.com\.br|links\.lekzera\.xyz)\b'''
+keywords = ["eletroradar.com.br", "lekzera"]
+
 [[rules]]
 id = "stripe-secret-key"
 description = "Stripe secret or restricted API key"
