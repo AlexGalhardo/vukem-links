@@ -37,7 +37,7 @@ type SeedSummary struct {
 // mercadolivreUrl, amazonUrl, shopeeUrl } rows) into the project, creating it
 // when missing. Running it again adds nothing.
 func ImportSeed(ctx context.Context, svc *catalog.Service, p SeedProject, path string) (SeedSummary, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path) //nolint:gosec // the path is an operator-supplied CLI flag
 	if err != nil {
 		return SeedSummary{}, fmt.Errorf("reading %s: %w", path, err)
 	}
@@ -234,8 +234,10 @@ func importAll(ctx context.Context, tx *database.Tx, old *database.DB) (Summary,
 		id, created, err := findOrInsert(ctx, tx, "SELECT id FROM affiliate_links WHERE product_id = ? AND url = ?", []any{productID, l.URL},
 			`INSERT INTO affiliate_links (product_id, store, url, priority, status, consecutive_failures, last_checked_at,
 				last_status_code, final_url, legacy_clicks, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			[]any{productID, l.Store, l.URL, l.Priority, l.Status, l.ConsecutiveFailures, isoPtr(l.LastCheckedAt),
-				l.LastStatusCode, l.FinalURL, l.LegacyClicks, iso(l.Created), iso(l.Created)})
+			[]any{
+				productID, l.Store, l.URL, l.Priority, l.Status, l.ConsecutiveFailures, isoPtr(l.LastCheckedAt),
+				l.LastStatusCode, l.FinalURL, l.LegacyClicks, iso(l.Created), iso(l.Created),
+			})
 		if err != nil {
 			return sum, fmt.Errorf("link %s: %w", l.URL, err)
 		}

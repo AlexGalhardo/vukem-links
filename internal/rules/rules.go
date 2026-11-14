@@ -80,8 +80,8 @@ func IsPublicHTTPURL(raw string) bool {
 	if ip, err := netip.ParseAddr(host); err == nil {
 		ip = ip.Unmap()
 
-		return !(ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() ||
-			ip.IsMulticast())
+		return !ip.IsLoopback() && !ip.IsPrivate() && !ip.IsLinkLocalUnicast() && !ip.IsUnspecified() &&
+			!ip.IsMulticast()
 	}
 
 	return true

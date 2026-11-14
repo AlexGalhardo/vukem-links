@@ -217,8 +217,11 @@ func (s *Service) GetStats(ctx context.Context, sc StatsScope) (Stats, error) {
 		dst    *[]Bucket
 		column string
 	}{
-		{&st.ByDevice, "e.device"}, {&st.ByCountry, "e.country"}, {&st.ByReferer, "e.referer"},
-		{&st.ByOS, "e.os"}, {&st.ByBrowser, "e.browser"},
+		{&st.ByDevice, "e.device"},
+		{&st.ByCountry, "e.country"},
+		{&st.ByReferer, "e.referer"},
+		{&st.ByOS, "e.os"},
+		{&st.ByBrowser, "e.browser"},
 	} {
 		if *g.dst, err = group(g.column); err != nil {
 			return st, err

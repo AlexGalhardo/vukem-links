@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -33,7 +34,7 @@ func (p *Public) Link(c *web.Ctx) error {
 
 	product, err := orm.QueryOf[models.Product](p.d.Catalog.DB).Where("external_id", c.Query("id")).First(ctx)
 	if err != nil {
-		if c.Query("id") == "" || err == orm.ErrNotFound {
+		if c.Query("id") == "" || errors.Is(err, orm.ErrNotFound) {
 			return c.String(http.StatusNotFound, "Link não encontrado")
 		}
 
