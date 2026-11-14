@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **test:** The integration smoke takes the site checkout and its public origin from `ELETRORADAR_DIR` and `SITE_URL` (both required) instead of defaults that named the site domain.
 - **docs:** Rewrite the README in English in the layout of the other vukem apps (centered header with CI, license, Go and version badges, summary, features, quick start, API contract, stability, contributing); the docs site drops the GitHub-only header when it syncs the README.
 - **docs:** Rewrite the released CHANGELOG sections and the GitHub release notes in the vukem format (scope, imperative description and commit link per entry) and point the compare links to this repository.
 - **Rewrite on the vukem framework (Go) with Inertia + React and a shadcn/ui-style interface**, replacing Next.js, Drizzle, Turso and Better Auth. The public contract is unchanged: `GET /link?id=<externalId>[&store=]` (302), `PUT`/`POST /api/v1/links?site=` with the shared `LINKS_API_KEY`, and `GET /health` (CORS `*`) answer exactly as before (`tests/api_test.go` pins it).
@@ -36,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **test:** The integration smoke takes the site checkout and its public origin from `ELETRORADAR_DIR` and `SITE_URL` (both required) instead of defaults that named the site domain.
 - **agents:** Check the agent guide, project rules and the four `links-*` skills against the code: each rule now lives once in `.claude/rules/project.md` and the skills hold only the procedure ([e49adec](https://github.com/AlexGalhardo/vukem-links/commit/e49adec956ae53f5c50086d9b7da04fbb6cf4ec4))
 - **agents:** Make `links-release` follow the release flow of `docs/workflows.md` (one commit per version, tag, push and GitHub Release) instead of a separate `chore(release)` commit ([e49adec](https://github.com/AlexGalhardo/vukem-links/commit/e49adec956ae53f5c50086d9b7da04fbb6cf4ec4))
 - **docs:** Describe the shared `LINKS_API_KEY`, the `PUT` sync, `/health` and the environment check in `docs/qa.md`, `docs/tooling.md`, `docs/conventions.md` and `SECURITY.md` ([e49adec](https://github.com/AlexGalhardo/vukem-links/commit/e49adec956ae53f5c50086d9b7da04fbb6cf4ec4))
@@ -56,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **test:** The integration smoke takes the site checkout and its public origin from `ELETRORADAR_DIR` and `SITE_URL` (both required) instead of defaults that named the site domain.
 - **web:** Redirect an address that is not a page, and a link or project that does not exist, to the start page (`proxy.ts`); `/link` and the API keep their 404 answers ([210195b](https://github.com/AlexGalhardo/vukem-links/commit/210195bf2400bdf8a5908a402eff5cf6f086e634))
 
 ## [6.1.0] - 2026-10-11
@@ -71,6 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **test:** The integration smoke takes the site checkout and its public origin from `ELETRORADAR_DIR` and `SITE_URL` (both required) instead of defaults that named the site domain.
 - **BREAKING:** **setup:** Rename the setup scripts (`setups/unix.sh` → `setups/setup-unix-local.sh`, `setups/docker.sh` → `setups/setup-unix-with-docker.sh`) ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
 - **docker:** Move the Docker files from `setups/` to `infra/` ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
 - **docker:** Start the stack in background, wait until the app answers and read secrets and the admin account from `.env` instead of built-in defaults ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
@@ -89,6 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **test:** The integration smoke takes the site checkout and its public origin from `ELETRORADAR_DIR` and `SITE_URL` (both required) instead of defaults that named the site domain.
 - **BREAKING:** **api:** Authenticate `/api/v1/links` with one key shared by every site (`LINKS_API_KEY`), with the site named by `?site=<origin>`; project tokens are refused ([19a2845](https://github.com/AlexGalhardo/vukem-links/commit/19a28451a1da72f595257f1d9eb6ff89afeaa1a1))
 
 ### Removed
@@ -99,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **test:** The integration smoke takes the site checkout and its public origin from `ELETRORADAR_DIR` and `SITE_URL` (both required) instead of defaults that named the site domain.
 - **import:** Check every new link of a JSON/CSV import before saving, skip links the project already has and links that answer as dead, and report how many of each ([5692ace](https://github.com/AlexGalhardo/vukem-links/commit/5692aceb1f8025d873e1c5ca6d8680c6d6c5f407))
 
 ## [5.3.0] - 2026-10-11
@@ -110,6 +116,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **test:** The integration smoke takes the site checkout and its public origin from `ELETRORADAR_DIR` and `SITE_URL` (both required) instead of defaults that named the site domain.
 - **health:** Check link health every hour instead of once a day; a link that dies is still reported on Telegram ([c6a5ce0](https://github.com/AlexGalhardo/vukem-links/commit/c6a5ce0177a980083fae72001ff3a1f7f2aa207f))
 
 ## [5.2.0] - 2026-10-11
@@ -123,6 +130,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **test:** The integration smoke takes the site checkout and its public origin from `ELETRORADAR_DIR` and `SITE_URL` (both required) instead of defaults that named the site domain.
 - **catalog:** Refuse a product without links everywhere (API, form and import) ([e3e7137](https://github.com/AlexGalhardo/vukem-links/commit/e3e7137c3d5dffa6f73479f50bed28d5cc94d007))
 
 ## [5.1.0] - 2026-10-11
@@ -137,6 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **test:** The integration smoke takes the site checkout and its public origin from `ELETRORADAR_DIR` and `SITE_URL` (both required) instead of defaults that named the site domain.
 - **repo:** Start a fresh history and remove `_legacy/` (v4 code) ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
 - **web:** Make dark the default theme regardless of the OS preference ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
 - **seed:** Load the EletroRadar project (381 products) from `seed.json` ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
@@ -162,6 +171,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **test:** The integration smoke takes the site checkout and its public origin from `ELETRORADAR_DIR` and `SITE_URL` (both required) instead of defaults that named the site domain.
 - **BREAKING:** **database:** Use a new schema (`projects`, `products`, `affiliate_links`, `click_events`, `link_checks`); copy existing data with `bun run db:migrate-v4` ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
 - **BREAKING:** **auth:** Move from next-auth to Better Auth; the admin account is recreated by the seed ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
 - **link:** Answer `/link?id=` with a server-side 302 to the first live link instead of a random one, and 404 for a missing or unknown id ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))

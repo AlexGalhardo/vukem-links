@@ -1,7 +1,7 @@
 // Runs the real catalogue sync of the eletroradar site against a dashboard (scripts/integration-smoke.sh).
 // Run it from the eletroradar checkout: it reads content/ relative to the working directory and imports the
 // site's own affiliate-links.ts, so the contract exercised is the one the site ships.
-//   cd ../eletroradar.com.br && SITE_URL=https://eletroradar.com.br \
+//   cd <site checkout> && SITE_URL=<public origin of the site> \
 //     DASHBOARD_URL=http://127.0.0.1:3056 LINKS_DASHBOARD_TOKEN=... bun /path/to/integration-sync.ts
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
