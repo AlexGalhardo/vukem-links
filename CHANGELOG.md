@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Rewrite on the vukem framework (Go) with Inertia + React and a shadcn/ui-style interface**, replacing Next.js, Drizzle, Turso and Better Auth. The public contract is unchanged: `GET /link?id=<externalId>[&store=]` (302), `PUT`/`POST /api/v1/links?site=` with the shared `LINKS_API_KEY`, and `GET /health` (CORS `*`) answer exactly as before (`tests/api_test.go` pins it).
+- The dashboard has a Vercel-style sidebar (overview, links, projects), light and dark themes, and confirmation dialogs that say what will be erased. Interface texts stay in Portuguese.
+- The database is a SQLite file (volume `links-data` in Docker) with integer ids and ISO 8601 UTC dates; `external_id`, the public identifier, is unchanged.
+- The hourly health check and the weekly Telegram report run on the vukem scheduler (`links:health`, `links:weekly-report`) instead of Vercel Cron; the `CRON_SECRET` variable and the `/api/cron/*` routes are gone.
+- The health check fetches links with the vukem `httpclient.Safe`, which refuses private addresses on every connection, so redirects are now covered too (closes the old "revalidate the host on each redirect" item).
+- Login uses the vukem session guard; an administrator is created by `admin:create` (`ADMIN_EMAIL`, `ADMIN_PASSWORD`). Login is throttled per IP and per account. There is still no sign-up.
+- Deployment is the Docker image with direct HTTP (`compose.yaml`, `Dockerfile` with pinned base images); the `setups/` scripts, `infra/`, `vercel.json`, Husky and commitlint are removed in favor of `.githooks/`.
+
+### Added
+
+- `import:seed` (loads `seed.json`) and `import:legacy -from <file>` (copies projects, products, links, clicks and checks from a copy of the previous database) commands; see `docs/migration.md`.
+- Playwright end-to-end test of the main flow (`bun run e2e`), `scripts/smoke.sh` (Docker build, compose up, public contract, `down -v`) and a frontend job in CI.
+- `docs/migration.md` and the "Reescrita no vukem" section of `docs/brainstorming.md`.
+
+### Removed
+
+- Next.js, React Server Components, TanStack Query, Base UI, Drizzle, Better Auth, Zod, Bun test runner, `qa.ts`, the v4 migration script and its documentation.
+
 ## [6.2.1] - 2026-10-11
 
 ### Changed

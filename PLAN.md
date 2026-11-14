@@ -11,36 +11,32 @@ Decisões e motivos: [`docs/brainstorming.md`](docs/brainstorming.md). Mapa do c
 
 ## Estado atual
 
-- **Versão:** 6.2.1 em `main`, repositório `AlexGalhardo/links.example.com` (histórico recriado em 2026-10-11). Cada commit enviado ao remoto vira uma release com as notas do `CHANGELOG.md` ([`docs/workflows.md`](docs/workflows.md)).
-- **Validado localmente:** `bun run ci` (typecheck, lint, testes unitários e de integração, build) em 2026-10-11; `bun qa.ts` (96 checks em 2026-10-11, antes da 6.1.0, que não mexe em código do app).
-- **Setup (6.1.0, validado em 2026-10-11 no Windows/Git Bash):** `setups/setup-windows-local.sh` de ponta a ponta em cópia limpa (cria `.env`, gera segredos, instala, migra, popula, sobe o servidor e o login responde 200; porta ocupada vira a próxima livre) e na pasta do projeto; `setups/setup-windows-with-docker.sh` com build da imagem, container no ar, `/health` 200 e re-execução idempotente. Os dois scripts `setup-unix-*` compartilham toda a lógica (`setups/_common.sh`) mas **não foram executados em Linux/macOS**: só `bash -n`.
-- **Agentes (6.2.1):** `.claude/` tem só o guia, as regras, as quatro skills `links-*` e a skill de terceiros `ponytail`; skills genéricas vêm da instalação global de cada dev ([`.claude/skills/SOURCES.md`](.claude/skills/SOURCES.md)).
-- **Produção:** `https://links.example.com` (projeto Vercel `links-example-com`, deploy pelo CLI `vercel deploy --prod`). Banco Turso novo criado pelo Vercel Marketplace em 2026-10-11, com as migrations da v5 e a seed (admin + projeto EletroRadar, 381 links). Os dados da v4 não foram migrados. A 6.1.0 não foi publicada na Vercel (só muda docs, `setups/` e `infra/`).
-- **Contrato com os sites:** [`docs/api.md`](docs/api.md). Os sites sincronizam o catálogo no build com `PUT /api/v1/links?site=` (chave única `LINKS_API_KEY`, projeto criado no primeiro contato), apontam os botões para `/link?id=&store=` e caem para o link direto da loja quando `/health` não responde.
+- **Branch `feat/vukem-rewrite` (não enviada):** reescrita completa de Next.js/Turso para **vukem 0.43.0 (Go) + Inertia + React + componentes estilo shadcn/ui + SQLite** (ROADMAP 12.a). Entra como 7.0.0 quando o dono mandar publicar; `main` e a produção na Vercel seguem na 6.2.1.
+- **Features mantidas:** CRUD de projetos, produtos e links; fallback automático; checagem de saúde de hora em hora (scheduler do vukem); clique com device, SO, navegador, país e origem; API de sync com chave única (mesmos paths, payload e respostas); `/link?id=`; `/health`; alertas e relatório semanal no Telegram; importação JSON/CSV; login do admin.
+- **Validado em 2026-11-14 (Windows/Git Bash):** `go vet ./...`, `go test -race ./...` (regras, catálogo, saúde com HTTP falso, API, redirect, login, dashboard, importação), `golangci-lint run` (0 issues), `bun run typecheck`, `bun run lint:js`, `bun run build`, `bun run e2e` (4 testes Playwright), `bash scripts/smoke.sh` (build da imagem, compose `up --wait`, `/link` 302, `/login` 200, login e `down -v`).
+- **Contrato com os sites:** [`docs/api.md`](docs/api.md), idêntico ao da 6.2.1 e fixado por `tests/api_test.go` (os sites sincronizam com `PUT /api/v1/links?site=` e `LINKS_DASHBOARD_TOKEN`, apontam os botões para `/link?id=&store=` e caem para a loja quando `/health` não responde).
+- **Produção atual:** `https://links.example.com` (Vercel + Turso, versão 6.2.1). **Não foi tocada.** A troca pelo app novo está em [`docs/migration.md`](docs/migration.md).
 
-## Fases da v5
+## Fases da reescrita
 
 | # | Fase | Status |
 | --- | --- | --- |
-| 1 | Fundação: dependências fixas, limpeza, `setups/`, docs, changelog, hooks | Feito |
-| 2 | Schema novo (`projects`, `products`, `affiliate_links`, `click_events`, `link_checks`) + script de migração v4 | Feito |
-| 3 | Redirect server-side em `/link?id=` com evento de clique (device, SO, navegador, país, origem, bot) | Feito |
-| 4 | Saúde dos links: checagem, cron diário, botão manual, alerta Telegram, fallback por prioridade | Feito |
-| 5 | Better Auth (e-mail e senha, cadastro desligado, rate limit em banco) | Feito |
-| 6 | UI em Base UI: visão geral, tabela de links, detalhe do link, projetos | Feito |
-| 7 | Importação JSON/CSV e API `POST /api/v1/links` por token de projeto | Feito |
-| 8 | `qa.ts` adaptado, testes unitários, CI manual + `pre-push` | Feito |
+| 1 | Scaffold vukem (Inertia + React), remoção do Next.js | Feito |
+| 2 | Schema (`projects`, `products`, `affiliate_links`, `click_events`, `link_checks`, `users`) | Feito |
+| 3 | Regras puras, catálogo (`Upsert`/`Sync`), saúde, Telegram, user agent | Feito |
+| 4 | Rotas públicas (`/link`, `/health`, `/api/v1/links`), login e dashboard | Feito |
+| 5 | UI: sidebar, visão geral, links, projetos, diálogos | Feito |
+| 6 | Importação do `seed.json` e do banco da versão anterior | Feito |
+| 7 | e2e Playwright, Docker, smoke, CI, documentação | Feito |
 
 ## Pendências (dependem do dev)
 
-Detalhes e contexto em `questions-to-dev.md` (raiz, fora do git).
-
-- [x] Revisar e apagar `_legacy/` (removido em 5.1.0).
-- [x] Variáveis de produção definidas na Vercel e admin criado pela seed (2026-10-11).
-- [ ] Conectar o repositório GitHub ao projeto Vercel para deploy automático por push (hoje o deploy é manual pelo CLI).
-- [ ] Reativar o gatilho do CI quando o billing do GitHub Actions estiver resolvido ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
-- [ ] Ajustar `SECURITY.md` (veio de outro projeto; foi adaptado, confirme o canal de contato).
-- [ ] Rodar `setups/setup-unix-local.sh` e `setups/setup-unix-with-docker.sh` em Linux ou macOS (validados só no Windows/Git Bash).
+- [ ] Rodar `import:legacy` com um export real do banco Turso de produção (só testado com um banco no schema do Drizzle) e conferir as contagens.
+- [ ] Decidir onde hospedar a imagem (Railway, Fly, VPS) e trocar o `LINKS_DASHBOARD_TOKEN`/URL dos sites só se o endereço mudar (o contrato não muda).
+- [ ] Publicar a 7.0.0 (bump, changelog, tag, GitHub Release) e então apontar o domínio para o app novo.
+- [ ] Revisar `SECURITY.md` (canal de contato).
+- [ ] Autorizar a adição de `@playwright/test` 1.63.0 (já usada no vukem-trello) e dizer se os componentes shadcn devem passar a usar Radix/`cva`/`lucide` (hoje não: são escritos no repositório sobre React + Tailwind).
+- [ ] Rodar o smoke e o e2e em Linux/macOS (validados só no Windows/Git Bash).
 
 ## Próximos passos (sugestões, por valor)
 
@@ -49,18 +45,17 @@ Detalhes e contexto em `questions-to-dev.md` (raiz, fora do git).
 - [ ] Reordenar links de um produto por arrastar (hoje: "Tornar principal" ou editar a ordem).
 - [ ] Exportar cliques em CSV.
 - [ ] Paginação server-side da tabela quando passar de ~5 mil links.
-- [ ] Revalidar o host a cada redirect na checagem de saúde (SSRF em profundidade).
+- [ ] Driver Turso do vukem (`drivers/turso`) quando deixar de ser experimental, para manter o banco remoto.
 
 ## Comandos
 
 | Comando | O que faz |
 | --- | --- |
-| `bun run dev` | Servidor de desenvolvimento |
-| `bun run ci` | Typecheck + lint + testes + build (mesmo gate do `pre-push`) |
-| `bun run test` | Testes unitários e de integração (`**/*.test.ts`, banco SQLite descartável) |
-| `bun qa.ts` | QA end-to-end contra o app rodando ([`docs/qa.md`](docs/qa.md)) |
-| `bun run db:generate` | Gera migration a partir de `db/schema.ts` |
-| `bun run db:migrate` | Aplica migrations |
-| `bun run db:seed` | Cria admin + projeto EletroRadar a partir de `seed.json` |
-| `bash setups/setup-{unix,windows}-local.sh` | Sobe o app do zero com Bun ([`docs/setup.md`](docs/setup.md)) |
-| `bash setups/setup-{unix,windows}-with-docker.sh` | Sobe o app do zero em container (`infra/`) |
+| `vukem serve` | Desenvolvimento (Go + Vite) |
+| `go vet ./... && go test ./...` | Vet e testes |
+| `golangci-lint run` | Lint Go |
+| `bun run typecheck && bun run lint:js && bun run build` | Frontend |
+| `bun run e2e` | Playwright |
+| `bash scripts/smoke.sh` | Smoke da imagem Docker |
+| `vukem codegen` | Regenera `resources/js/page-props.ts` |
+| `app admin:create` / `import:seed` / `import:legacy -from <arquivo>` | Admin e importações |

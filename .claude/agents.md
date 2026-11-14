@@ -1,4 +1,4 @@
-# links-afiliados — guia para agentes
+# vukem-links — guia para agentes
 
 Dashboard pessoal de links de afiliado. Responde três perguntas: o link está vivo? onde ele está (projeto e página)? quantos cliques teve, em desktop ou mobile?
 
@@ -6,37 +6,32 @@ Dashboard pessoal de links de afiliado. Responde três perguntas: o link está v
 
 ## Stack
 
-Next.js 16 (App Router, Server Components) · React 19 · TypeScript 7 strict · Tailwind CSS v4 · Base UI (`@base-ui/react`) · TanStack Query · Drizzle ORM + libSQL (Turso em produção, arquivo SQLite local) · Better Auth · Zod · Biome · Bun.
+Go 1.27 · vukem 0.43 (rotas, ORM, auth, scheduler, Inertia) · SQLite · Inertia 3 + React 19 · Tailwind CSS 4 · componentes estilo shadcn/ui escritos no repositório · TypeScript 7 strict · Biome · Bun (só frontend) · Playwright · Docker.
 
 ## Mapa
 
 | Caminho | Papel |
 | --- | --- |
-| `app/link/route.ts` | Redirect público `/link?id=<externalId>`: escolhe o link, grava o clique, 302 |
-| `app/(dashboard)/` | Telas autenticadas: visão geral, `links`, `links/[id]`, `projects`, `projects/[slug]` |
-| `app/actions.ts` | Todas as server actions (mutações do dashboard) |
-| `app/api/links` | Lista de links para a tabela (TanStack Query) |
-| `app/api/auth/[...all]` | Handler do Better Auth (login, logout, sessão) |
-| `app/api/v1/links` | API dos sites (chave única `LINKS_API_KEY` + `?site=`): `PUT` sincroniza o catálogo inteiro, `POST` acrescenta. Site novo vira projeto sozinho |
-| `proxy.ts` | Endereço que não é página vai para `/`. Não é controle de acesso |
-| `lib/env.ts` | Schema das variáveis de ambiente (zod), conferido no início de todo build (`bun run check-env`) |
-| `app/health` | Saúde pública (CORS): os sites caem para o link direto da loja quando ela não responde |
-| `app/api/cron/health` | Checagem de saúde de hora em hora (Vercel Cron) |
-| `app/api/cron/weekly` | Relatório semanal de cliques por projeto no Telegram (Vercel Cron) |
-| `lib/cron.ts` | `hasBearer` (comparação em tempo constante) e `isCronRequest`: guarda das rotas de cron e da API dos sites |
-| `lib/telegram.ts` | `notify`: alerta de link morto, log de cada clique redirecionado, relatório semanal |
-| `lib/links.ts` | Regras puras: escolha do link, classificação da checagem, validação, importação (pula link morto ou já cadastrado), mensagens do Telegram |
-| `lib/data.ts` | Leituras e as escritas de produtos/links: `upsertProducts` (única criação), `syncProducts` (reconcilia o `PUT`), `findOrCreateProject` |
-| `lib/health.ts` | Checagem de saúde (I/O): `checkLinks`, `isSiteLive`, `findDeadUrls` |
-| `lib/auth.ts`, `lib/session.ts` | Better Auth e `requireSession()` |
-| `components/ui.tsx` | Wrappers de Base UI + `useAction` (mutação via server action) |
-| `db/schema.ts`, `drizzle/`, `lib/db.ts` | Schema, migrations versionadas e o cliente Drizzle |
-| `scripts/` | `migrate.ts` (`db:migrate`), `seed.ts` (`db:seed`), `migrate-v4.ts` (migração única da v4) e `check-env.ts` |
-| `**/*.test.ts`, `test/` | Testes unitários e de integração (`bun test`); `test/setup.ts` cria o banco descartável |
-| `qa.ts` | QA end-to-end (Playwright) |
-| `setups/` | Quatro scripts bash para subir do zero: `setup-{unix,windows}-{local,with-docker}.sh` (+ `_common.sh`) |
-| `infra/` | `Dockerfile` e `docker-compose.yml` do ambiente de teste local (o `.dockerignore` fica na raiz, que é o contexto de build) |
-| `vercel.json` | Crons de produção |
+| `routes/web.go` | Todas as rotas: públicas (`/link`, `/health`, `/api/v1/links`), login e dashboard (grupo com `auth.Required`) |
+| `routes/schedule.go` | Tarefas agendadas: `links:health` (hora em hora) e `links:weekly-report` (domingo 17h BRT) |
+| `app/controllers/public.go` | `/link?id=` (escolhe o link, grava o clique, 302) e `/health` |
+| `app/controllers/api.go` | API dos sites (chave única `LINKS_API_KEY` + `?site=`): `PUT` sincroniza o catálogo, `POST` acrescenta; site novo vira projeto |
+| `app/controllers/dashboard.go`, `auth.go` | Páginas e ações do dashboard; login e logout |
+| `app/accounts/` | Guard de sessão e `CreateAdmin` |
+| `app/pages/pages.go` | Props tipadas das páginas Inertia (gera `resources/js/page-props.ts` com `vukem codegen`) |
+| `app/requests/` | Schemas de validação dos formulários |
+| `internal/rules/` | Regras puras: loja, escolha do link, classificação da saúde, validação, importação, mensagens do Telegram |
+| `internal/catalog/` | `Upsert` (única criação de produto/link), `Sync` (reconcilia o `PUT`), estatísticas e mutações de links |
+| `internal/health/` | Checagem de saúde por HTTP (`Checker`): `Check`, `CheckAll`, `IsSiteLive`, `FindDeadURLs` |
+| `internal/telegram/`, `internal/useragent/` | Alertas; device/SO/navegador/bot |
+| `internal/legacy/` | Importação do `seed.json` e do banco da versão Next.js |
+| `internal/deps/` | Serviços compartilhados e `Overrides` (HTTP e Telegram falsos nos testes) |
+| `database/migrations/` | Schema (migrations em Go) |
+| `bootstrap/` | `app.go` registra tudo; `commands.go` tem `admin:create`, `import:seed`, `import:legacy` |
+| `resources/js/` | Páginas, layouts, `components/ui` (shadcn-style), `LinksTable`, `stats` |
+| `tests/` | Testes HTTP do servidor com `vukemtest` (redirect, API, login, dashboard) |
+| `e2e/`, `scripts/e2e-server.ts` | Playwright com banco novo por execução |
+| `Dockerfile`, `compose.yaml`, `scripts/smoke.sh` | Imagem, compose e smoke |
 
 ## Regras do projeto
 
@@ -46,30 +41,28 @@ Contratos, segurança, dados, UI e processo: [`rules/project.md`](rules/project.
 
 | Documento | Conteúdo |
 | --- | --- |
-| [`docs/agent-setup.md`](../docs/agent-setup.md) | **Setup do zero para agentes**: dependências, `.env`, banco, local, Docker, testes, GitHub e Vercel, com comando e verificação por passo |
-| [`docs/setup.md`](../docs/setup.md) | Scripts de `setups/`, variáveis de ambiente, Docker (`infra/`) |
-| [`docs/architecture.md`](../docs/architecture.md) | Modelo de dados, fluxos (redirect, clique, saúde) e camadas |
-| [`docs/tooling.md`](../docs/tooling.md) | Ferramentas e onde cada uma é configurada: Bun, scripts do `package.json`, Biome, hooks, Drizzle, `gh`, `vercel` |
-| [`docs/workflows.md`](../docs/workflows.md) | Fluxo de tarefa, commit, release (tag + GitHub Release) e deploy na Vercel (variáveis, Turso, crons) |
-| [`docs/brainstorming.md`](../docs/brainstorming.md) | Decisões da v5 e seus motivos |
+| [`docs/setup.md`](../docs/setup.md) | Requisitos, variáveis de ambiente, local, Docker, testes |
+| [`docs/architecture.md`](../docs/architecture.md) | Estrutura, modelo de dados, fluxos (redirect, clique, saúde) e camadas |
+| [`docs/tooling.md`](../docs/tooling.md) | Ferramentas e onde cada uma é configurada |
+| [`docs/workflows.md`](../docs/workflows.md) | Fluxo de tarefa, commit, release e deploy |
+| [`docs/brainstorming.md`](../docs/brainstorming.md) | Decisões da v5 e da reescrita no vukem |
 | [`docs/health-check.md`](../docs/health-check.md) | Como um link vira vivo, morto ou inconclusivo |
-| [`docs/api.md`](../docs/api.md) | Contrato com os sites: redirect `/link`, `PUT`/`POST /api/v1/links`, `/health` e formatos de importação |
-| [`docs/auth.md`](../docs/auth.md) | Better Auth, criação do admin, rate limit |
-| [`docs/qa.md`](../docs/qa.md) | `qa.ts`, testes unitários, gate de CI |
-| [`docs/migration-v4.md`](../docs/migration-v4.md) | Migração dos dados da v4 |
+| [`docs/api.md`](../docs/api.md) | Contrato com os sites: `/link`, `PUT`/`POST /api/v1/links`, `/health` e formatos de importação |
+| [`docs/auth.md`](../docs/auth.md) | Login do administrador |
+| [`docs/migration.md`](../docs/migration.md) | Migração do Next.js/Turso para o vukem |
 | [`docs/conventions.md`](../docs/conventions.md) | SemVer, Keep a Changelog, Conventional Commits, dependências e estilo de código |
 | [`docs/PROMPT SEED.md`](../docs/PROMPT%20SEED.md) | Histórico: prompt original que gerou o seed legado (não descreve o estado atual) |
 
 ## Skills
 
-Tudo o que existe em `.claude/` está nesta seção: o guia, as regras e as skills abaixo. Não há agentes nem referências próprios do repositório.
+Tudo o que existe em `.claude/` está nesta seção: o guia, as regras e as skills abaixo.
 
 | Skill | Quando usar |
 | --- | --- |
-| `links-local-verification` | Antes de dar qualquer tarefa como concluída, ou quando o gate (`bun run ci`) ou o `qa.ts` falham |
-| `links-secure-endpoint` | Ao criar ou alterar server action, rota de API ou o redirect |
-| `links-db-change` | Ao mexer em `db/schema.ts` |
+| `links-local-verification` | Antes de dar qualquer tarefa como concluída, ou quando o gate (`go test`, lint, build) ou o e2e falham |
+| `links-secure-endpoint` | Ao criar ou alterar rota, ação do dashboard ou o redirect |
+| `links-db-change` | Ao mexer em `database/migrations/` ou nos modelos |
 | `links-release` | Ao enviar qualquer commit ao remoto: todo push é uma versão (bump, changelog, tag, GitHub Release) |
-| `ponytail` (+ `ponytail-review`, `ponytail-audit`, `ponytail-debt`, `ponytail-gain`, `ponytail-help`) | Terceiros. Ao escrever ou revisar código, para a solução mais simples que funciona. É a origem do comentário `// ponytail:` exigido em [`docs/conventions.md`](../docs/conventions.md#código); `ponytail-debt` lista esses comentários |
+| `ponytail` (+ `ponytail-review`, `ponytail-audit`, `ponytail-debt`, `ponytail-gain`, `ponytail-help`) | Terceiros. Solução mais simples que funciona; origem do comentário `// ponytail:` ([`docs/conventions.md`](../docs/conventions.md#código)) |
 
-Origem e versão das skills de terceiros: [`skills/SOURCES.md`](skills/SOURCES.md). Skills genéricas (revisão, TDD, design, performance) vêm da instalação global de cada dev, não deste repositório.
+Origem e versão das skills de terceiros: [`skills/SOURCES.md`](skills/SOURCES.md).

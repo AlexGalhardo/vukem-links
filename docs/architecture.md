@@ -1,5 +1,30 @@
 # Arquitetura
 
+## Estrutura
+
+```text
+cmd/app/                 main: vukem.Main(bootstrap.New)
+bootstrap/               app.go (tudo registrado em um lugar), commands.go (admin:create, import:*)
+routes/                  web.go (rotas públicas, login e dashboard), schedule.go (tarefas agendadas)
+app/controllers/         public.go (/link, /health), api.go (/api/v1/links), auth.go, dashboard.go
+app/accounts/            guard de sessão e CreateAdmin
+app/models/              User e as tabelas de links
+app/pages/               props tipadas de cada página Inertia (gera page-props.ts)
+app/requests/            schemas de validação dos formulários
+internal/rules/          regras puras (loja, escolha do link, saúde, validação, importação, mensagens)
+internal/catalog/        escritas e leituras do catálogo (upsert, sync, estatísticas)
+internal/health/         checagem de saúde (HTTP) e CheckAll
+internal/telegram/       alertas
+internal/useragent/      device, SO, navegador e bot
+internal/legacy/         importação do seed.json e do banco da versão anterior
+internal/deps/           serviços compartilhados e Overrides para testes
+database/migrations/     schema
+resources/js/            páginas Inertia, layouts, componentes (shadcn-style) e page-props.ts
+resources/css/app.css    tokens de tema (variáveis CSS do shadcn) e Tailwind
+tests/                   testes HTTP de ponta a ponta do servidor (vukemtest)
+e2e/                     Playwright
+```
+
 ## Modelo de dados
 
 ```text
@@ -10,50 +35,46 @@ projects 1 ── N products 1 ── N affiliate_links 1 ── N link_checks
 
 | Tabela | Papel | Campos-chave |
 | --- | --- | --- |
-| `projects` | Aplicação onde os links aparecem | `slug`, `base_url` |
-| `products` | Página de produto dentro do projeto | `external_id` (id público do redirect), `page_url`, `category` |
+| `projects` | Site onde os links aparecem | `slug`, `base_url` |
+| `products` | Página de produto do projeto | `external_id` (id público do redirect), `page_url`, `category` |
 | `affiliate_links` | Um link de afiliado de um produto | `store`, `url`, `priority`, `status`, `consecutive_failures`, `legacy_clicks` |
 | `click_events` | Um clique | `device`, `os`, `browser`, `country`, `referer`, `is_bot` |
 | `link_checks` | Uma checagem de saúde | `status_code`, `final_url`, `result` |
-| `user`, `session`, `account`, `verification`, `rate_limit` | Better Auth | ver [`auth.md`](auth.md) |
+| `users`, `remember_tokens` | Login do administrador | ver [`auth.md`](auth.md) |
 
-A tabela se chama `affiliate_links` (e não `links`) para conviver com a `links` da v4 durante a migração.
+Chaves primárias são inteiras (as da versão anterior eram UUIDs; o `external_id`, que é o identificador público, não mudou). Datas ficam em texto ISO 8601 UTC. Chaves estrangeiras com `ON DELETE CASCADE`: apagar projeto, produto ou link leva os dependentes.
 
 ## Fluxo do clique
 
 ```text
-visitante ── GET /link?id=<externalId> ──> app/link/route.ts
-   1. produto por external_id            (404 se não existe)
-   2. pickLink: primeiro link não morto, por priority crescente
-   3. 302 para link.url                  (ou products.page_url se todos estão mortos)
-   4. after(): grava click_events; se não havia link vivo, alerta no Telegram
+visitante ── GET /link?id=<externalId> ──> controllers.Public.Link
+   1. produto por external_id            (404 se não existe ou se falta o id)
+   2. rules.PickLink: primeiro link não morto, por priority crescente (preferindo ?store=)
+   3. grava click_events (falha só é logada)
+   4. 302 para link.url                  (ou products.page_url se todos estão mortos)
+   5. goroutine: alerta no Telegram (clique humano; clique sem link vivo avisa à parte)
 ```
 
 - `unknown` (nunca checado) é elegível: link novo redireciona antes da primeira checagem.
-- Device, SO, navegador e bot vêm de `userAgent()` do Next. País vem de `x-vercel-ip-country`.
-- O evento é gravado depois da resposta: tracking nunca atrasa nem derruba o redirect.
+- Device, SO, navegador e bot vêm de `internal/useragent`. País vem de `X-Vercel-IP-Country` ou `CF-IPCountry`. Nada de IP no banco; o referer guarda origem e caminho, sem query string.
+- `/link`, `/health` e `/api/v1/` não leem nem criam sessão e ficam fora do CSRF (`MiddlewareOptions` em `routes/web.go`); `/health` é aberto a qualquer origem (CORS `*`).
 
 ## Fluxo da saúde
 
-Ver [`health-check.md`](health-check.md). Resumo: `lib/health.ts` faz o fetch, `classifyProbe` e `nextHealth` (`lib/links.ts`) decidem o estado.
+Ver [`health-check.md`](health-check.md). `internal/health` faz o HTTP (cliente `httpclient.Safe` do vukem, que recusa endereços privados em cada conexão, inclusive nos redirects), `rules.ClassifyProbe` e `rules.NextHealth` decidem o estado. O scheduler do vukem roda `links:health` de hora em hora e `links:weekly-report` aos domingos, 17h de Brasília.
 
 ## Camadas
 
-| Camada | Arquivos | Regra |
+| Camada | Pacotes | Regra |
 | --- | --- | --- |
-| Regras puras | `lib/links.ts` | Sem I/O; coberto por `lib/links.test.ts` |
-| Dados | `lib/data.ts`, `lib/health.ts` | Único lugar com queries de negócio |
-| Borda | `app/actions.ts`, `app/api/**`, `app/link/route.ts` | Autentica, valida com Zod, chama a camada de dados |
-| UI | `app/(dashboard)/**`, `components/**` | Server Components leem direto de `lib/data.ts`; cliente usa TanStack Query |
-
-## Dados no cliente
-
-- A tabela de links (`components/links-table.tsx`) busca `/api/links` com `useQuery(["links"])` e filtra, ordena e pagina em memória.
-- Mutações usam `useAction` (`components/ui.tsx`): server action dentro de `useMutation`; no sucesso invalida `["links"]` e chama `router.refresh()` para os Server Components.
+| Regras puras | `internal/rules` | Sem I/O; testes de tabela |
+| Dados | `internal/catalog`, `internal/health` | Único lugar com queries de negócio |
+| Borda | `app/controllers`, `routes` | Autentica, valida, chama a camada de dados |
+| UI | `resources/js` | Páginas Inertia recebem props tipadas; mutações são `router.post/put/delete` com redirect de volta e mensagem flash |
 
 ## Limites conhecidos
 
-- `/api/links` devolve todos os links. Passar a paginar no servidor acima de ~5 mil.
-- Um cron de hora em hora checa 400 links (`BATCH` em `lib/health.ts`).
-- Cada clique humano redirecionado para uma loja gera uma mensagem no Telegram; um cron semanal (domingo, 17h de Brasília) envia o total de cliques por projeto dos últimos 7 dias (`/api/cron/weekly`).
+- A lista de links vai inteira para a página e a tabela filtra em memória (`ponytail` em `catalog.ListLinks`); paginar no servidor acima de ~5 mil.
+- Um ciclo do scheduler checa 400 links (`health.DefaultBatch`).
 - Estatísticas cobrem os últimos 30 dias; o total de cliques é de todo o período.
+- Sem Turso: o banco é um arquivo SQLite local (volume). O driver `drivers/turso` do vukem é experimental e não foi adotado.

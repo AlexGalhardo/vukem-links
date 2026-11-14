@@ -1,30 +1,31 @@
 # Autenticação
 
-[Better Auth](https://www.better-auth.com) com e-mail e senha. Configuração em `lib/auth.ts`.
+Auth do vukem: `auth.SessionGuard` com `auth.ORMProvider[models.User]`. Configuração em `app/accounts/accounts.go`.
 
 ## Modelo
 
-- Um admin. **Cadastro público desligado** (`disableSignUp: true`): `POST /api/auth/sign-up/email` responde 400.
-- A conta nasce por `bun run db:seed`, que lê `ADMIN_EMAIL` / `ADMIN_PASSWORD` e grava pelo adapter interno do Better Auth (hash scrypt). Rodar de novo com o mesmo e-mail não altera a senha.
-- Sessão em cookie HttpOnly, SameSite=Lax, assinado com `BETTER_AUTH_SECRET`.
-- Rate limit ligado, com contadores em banco (`rate_limit`): memória não sobrevive a cold start em serverless. Login: 3 tentativas a cada 10 s por IP.
+- Um admin. **Sem cadastro público, sem recuperação de senha por e-mail**: `/register` e `/forgot-password` respondem 404.
+- A conta nasce de `admin:create`, que lê `ADMIN_EMAIL` / `ADMIN_PASSWORD` (8+ caracteres) e grava a senha com argon2id. Rodar de novo com o mesmo e-mail não altera a senha.
+- Sessão em cookie HttpOnly assinado com `APP_KEY`; com `APP_URL` em `https://` o cookie é `Secure`. "Manter conectado" usa o token de lembrança (`remember_tokens`, só o hash SHA-256 fica no banco).
+- Throttle de login (`ratelimit`): 30 tentativas por minuto por IP, 5 por minuto por IP+e-mail e 20 por 10 minutos por e-mail. A 429 vale mesmo com a senha certa.
 
 ## Onde a sessão é exigida
 
 | Superfície | Como |
 | --- | --- |
-| Páginas `app/(dashboard)/**` | `requireSession()` no layout e em cada página (redireciona para `/login`) |
-| Server actions (`app/actions.ts`) | `requireSession()` na primeira linha |
-| `GET /api/links` | `getSession()` → 401 |
+| Todas as páginas e ações do dashboard (`/`, `/links/**`, `/projects/**`) | grupo de rotas com `auth.Required(acc.Web)` em `routes/web.go` |
+| `POST /logout` | `auth.Required` |
+| `/login` | `auth.Guest`: quem já entrou vai para `/` |
 
-Rotas que **não** usam sessão, por desenho: `/link` (pública), `/health` (pública), `/api/v1/links` (chave `LINKS_API_KEY`, a mesma para todos os sites), `/api/cron/health` e `/api/cron/weekly` (`CRON_SECRET`).
+Visitante em página recebe redirect para `/login` (e volta para a página pedida depois do login); em JSON/API recebe 401. Os testes (`tests/auth_test.go`) chamam cada ação do dashboard sem sessão e conferem que nada muda.
+
+Rotas que **não** usam sessão, por desenho: `/link` (pública), `/health` (pública, CORS `*`) e `/api/v1/links` (chave `LINKS_API_KEY`, comparada em tempo constante; sem CSRF porque não há cookie).
 
 ## Operações
 
-- **Trocar a senha do admin:** não há tela. Apague a conta (`delete from user where email = …`, as sessões e contas caem em cascata) e rode `bun run db:seed` com a senha nova.
-- **Derrubar todas as sessões:** troque `BETTER_AUTH_SECRET` ou `delete from session`.
-- **Atualizar o Better Auth:** as tabelas `user`, `session`, `account`, `verification` e `rate_limit` em `db/schema.ts` seguem o formato da biblioteca. Compare com `bunx @better-auth/cli generate` e gere uma migration nova se mudarem.
+- **Trocar a senha do admin:** não há tela. Apague a linha (`DELETE FROM users WHERE email = '...'`) e rode `admin:create` com a senha nova, ou incremente `session_version` para derrubar as sessões.
+- **Derrubar todas as sessões:** troque `APP_KEY` (guarde a antiga em `APP_PREVIOUS_KEYS` só se quiser que as sessões continuem) ou `UPDATE users SET session_version = session_version + 1`.
 
-## Vindo da v4
+## Vindo da versão anterior
 
-A v4 usava next-auth com bcrypt na tabela `users`. As senhas não são migradas: o admin é recriado pelo seed.
+O Better Auth do Next.js (scrypt) não é migrado: o admin é recriado por `admin:create`.

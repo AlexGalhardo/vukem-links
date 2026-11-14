@@ -68,3 +68,16 @@ Dashboard pessoal (um admin) para gerenciar links de afiliado usados em vários 
 - Comparação entre projetos e exportação CSV.
 - Paginação server-side da tabela (necessária acima de ~5 mil links).
 - Fila (Vercel Queues/Workflows) para a checagem de saúde.
+
+## Reescrita no vukem (7.0.0)
+
+Decisões do dono em 2026-11-14 (ROADMAP 12.a). As seções acima descrevem a v5 (Next.js) e ficam como histórico.
+
+| Tema | Decisão | Motivo |
+| --- | --- | --- |
+| Backend | Go com o framework vukem (0.43.0) | Mesmo stack dos outros projetos; binário único; scheduler, ORM e auth prontos |
+| Frontend | Inertia + React + componentes estilo shadcn/ui, sidebar à la Vercel | Um app só, sem API separada; props tipadas geradas do Go |
+| Banco | SQLite em arquivo (volume) | Dados pequenos; o driver Turso do vukem é experimental. A migração dos dados está em [`migration.md`](migration.md) |
+| Auth | Guard de sessão do vukem, um admin criado por comando | Sem cadastro nem e-mail |
+| Contrato | Idêntico: `/link`, `PUT/POST /api/v1/links`, `/health` | Os sites não mudam |
+| Deploy | Imagem Docker com HTTP direto | Sai o acoplamento com a Vercel (os crons viraram o scheduler) |

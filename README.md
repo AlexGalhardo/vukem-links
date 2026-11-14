@@ -1,4 +1,4 @@
-# links-afiliados
+# vukem-links
 
 Dashboard pessoal para gerenciar links de afiliado usados em vários projetos.
 
@@ -6,31 +6,46 @@ Dashboard pessoal para gerenciar links de afiliado usados em vários projetos.
 - **Onde ele está?** Cada link pertence a um produto (página) de um projeto.
 - **Quantos cliques?** Cada clique registra device, sistema, navegador, país e página de origem.
 
-Todo clique passa por `GET /link?id=<id do produto>`, que redireciona (302) para o link de afiliado ativo.
+Todo clique passa por `GET /link?id=<id do produto>`, que redireciona (302) para o link de afiliado ativo. Os sites registram o catálogo no build com `PUT /api/v1/links?site=` ([contrato](docs/api.md)).
+
+## Stack
+
+Go 1.27 · [vukem](https://github.com/AlexGalhardo/vukem) 0.43 (rotas, ORM, auth, scheduler) · Inertia 3 + React 19 + Tailwind CSS 4 com componentes no estilo shadcn/ui · SQLite · Bun (só para o frontend) · Playwright.
 
 ## Rodar local
 
 ```bash
-bash setups/setup-unix-local.sh             # Linux / macOS
-bash setups/setup-windows-local.sh          # Windows (Git Bash)
-bash setups/setup-unix-with-docker.sh       # Linux / macOS + Docker (build de produção)
-bash setups/setup-windows-with-docker.sh    # Windows (Git Bash) + Docker
+cp .env.example .env && vukem key:generate     # APP_KEY no .env; defina ADMIN_PASSWORD e LINKS_API_KEY
+bun install
+vukem migrate && vukem admin:create            # banco SQLite em storage/ e a conta de admin
+vukem import:seed                              # opcional: os 381 links do seed.json
+vukem serve                                    # http://localhost:3000
 ```
 
-<http://localhost:3000> — login `admin@example.com`, senha em `ADMIN_PASSWORD` do `.env`. Detalhes em [`docs/setup.md`](docs/setup.md).
+Login com `ADMIN_EMAIL` e `ADMIN_PASSWORD` do `.env`. Detalhes em [`docs/setup.md`](docs/setup.md).
 
-## Stack
+## Docker
 
-Next.js 16 · React 19 · TypeScript · Tailwind CSS v4 · Base UI · TanStack Query · Drizzle + Turso (libSQL) · Better Auth · Bun.
+```bash
+export APP_KEY="$(go run ./cmd/app key:generate)" ADMIN_PASSWORD=... LINKS_API_KEY=...
+docker compose up -d --wait        # http://localhost:3000, dados no volume links-data
+docker compose down                # -v apaga o volume
+```
+
+`bash scripts/smoke.sh` faz o ciclo completo (build, subir, contrato público, derrubar).
 
 ## Comandos
 
 | Comando | O que faz |
 | --- | --- |
-| `bun run dev` | Servidor de desenvolvimento |
-| `bun run ci` | Typecheck, lint, testes e build |
-| `bun qa.ts` | QA end-to-end contra o app rodando |
-| `bun run db:migrate` / `db:seed` | Aplica migrations / cria admin e dados de exemplo |
+| `vukem serve` | Desenvolvimento (Go + Vite com reload) |
+| `go test ./...` | Testes Go: regras, catálogo, saúde, API, redirect, login e páginas |
+| `golangci-lint run` | Lint Go |
+| `bun run typecheck` / `lint:js` / `build` | Frontend |
+| `bun run e2e` | Fluxo principal no navegador (Playwright) |
+| `bash scripts/smoke.sh` | Smoke da imagem Docker |
+| `app admin:create` | Cria o admin (`ADMIN_EMAIL`/`ADMIN_PASSWORD`), sem alterar senha existente |
+| `app import:seed` / `import:legacy -from <arquivo>` | Importa o `seed.json` / o banco da versão anterior ([`docs/migration.md`](docs/migration.md)) |
 
 ## Documentação
 
@@ -38,16 +53,14 @@ Next.js 16 · React 19 · TypeScript · Tailwind CSS v4 · Base UI · TanStack Q
 | --- | --- |
 | [`PLAN.md`](PLAN.md) | Estado atual, pendências e próximos passos |
 | [`CHANGELOG.md`](CHANGELOG.md) | Histórico de versões |
-| [`docs/setup.md`](docs/setup.md) | Scripts de setup, variáveis de ambiente, Docker |
-| [`docs/agent-setup.md`](docs/agent-setup.md) | Setup do zero, passo a passo com verificação (local, Docker, GitHub, Vercel) |
+| [`docs/setup.md`](docs/setup.md) | Variáveis de ambiente, local e Docker |
+| [`docs/architecture.md`](docs/architecture.md) | Estrutura, modelo de dados e fluxos |
+| [`docs/api.md`](docs/api.md) | Redirect, API de cadastro (contrato com os sites) e importação |
+| [`docs/health-check.md`](docs/health-check.md) | Como um link é considerado vivo ou morto |
+| [`docs/auth.md`](docs/auth.md) | Login do administrador |
+| [`docs/migration.md`](docs/migration.md) | Migração do Next.js/Turso para o vukem |
 | [`docs/tooling.md`](docs/tooling.md) | Ferramentas e configuração |
 | [`docs/workflows.md`](docs/workflows.md) | Commit, release e deploy |
-| [`docs/architecture.md`](docs/architecture.md) | Modelo de dados e fluxos |
-| [`docs/health-check.md`](docs/health-check.md) | Como um link é considerado vivo ou morto |
-| [`docs/api.md`](docs/api.md) | Redirect, API de cadastro e importação |
-| [`docs/auth.md`](docs/auth.md) | Autenticação |
-| [`docs/qa.md`](docs/qa.md) | Testes e QA |
-| [`docs/migration-v4.md`](docs/migration-v4.md) | Migração da v4 |
 | [`docs/conventions.md`](docs/conventions.md) | SemVer, changelog e commits |
-| [`docs/brainstorming.md`](docs/brainstorming.md) | Decisões de produto da v5 |
+| [`docs/brainstorming.md`](docs/brainstorming.md) | Decisões de produto e da reescrita |
 | [`.claude/agents.md`](.claude/agents.md) | Guia para agentes de código |

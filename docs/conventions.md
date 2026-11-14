@@ -24,7 +24,7 @@
 <tipo>(<escopo>): <assunto no imperativo, minúsculo, sem ponto final>
 ```
 
-Em inglês. Validado pelo hook `commit-msg` (commitlint, `@commitlint/config-conventional`).
+Em inglês. Validado pelo hook `commit-msg` de `.githooks/`.
 
 | Tipo | Uso | Efeito na versão |
 | --- | --- | --- |
@@ -33,7 +33,7 @@ Em inglês. Validado pelo hook `commit-msg` (commitlint, `@commitlint/config-con
 | `feat!` / rodapé `BREAKING CHANGE:` | Quebra de contrato | MAJOR |
 | `docs`, `refactor`, `test`, `chore`, `build`, `ci`, `perf` | Sem mudança de comportamento | PATCH ou nenhum |
 
-Escopos usados: `redirect`, `health`, `links`, `projects`, `auth`, `api`, `ui`, `db`, `qa`, `setup`, `deps`.
+Escopos usados: `redirect`, `health`, `catalog`, `rules`, `auth`, `api`, `ui`, `db`, `import`, `docker`, `e2e`, `deps`.
 
 ```text
 feat(health): mark link dead after three consecutive failures
@@ -43,14 +43,15 @@ feat(api)!: authenticate sites with one shared key
 
 ## Dependências
 
-- Versão estável exata em `package.json` (sem `^`, sem `rc`/`beta`/`canary`).
-- Gerenciador: Bun. Lockfile `bun.lock` versionado; instale com `bun install --frozen-lockfile`.
-- Imagem Docker com tag fixa (`oven/bun:1.4.2-slim` em `infra/Dockerfile`), nunca `latest`.
+- Go: só o vukem e a stdlib. Versão estável exata em `go.mod`.
+- JavaScript: versão estável exata em `package.json` (sem `^`, sem `rc`/`beta`/`canary`). Gerenciador Bun; `bun.lock` versionado; instale com `bun install --frozen-lockfile`.
+- Os componentes de UI (estilo shadcn/ui) são escritos no repositório; não adicione Radix, `cva`, `clsx`, `tailwind-merge` ou uma biblioteca de ícones sem aprovação.
+- Imagem Docker com tag fixa e digest (`Dockerfile`), nunca `latest`.
 - Dependência nova precisa de aprovação do dev.
 
 ## Código
 
-- TypeScript `strict` + `noUncheckedIndexedAccess`; sem `any`; retorno explícito em função exportada.
-- Formatação e lint: Biome (`bun run format`). Tabs, 120 colunas.
+- Go: `gofumpt` + `goimports` (`golangci-lint fmt`), erros sempre tratados e comparados com `errors.Is`, `context.Context` primeiro em função que faz I/O.
+- TypeScript `strict`; sem `any`; retorno explícito em função exportada. Formatação e lint: Biome (`bun run format`), 2 espaços, 120 colunas.
 - Comentário só para o *porquê*. Simplificação consciente leva `// ponytail:` com o limite e o caminho de evolução.
 - Interface em pt-BR; código, identificadores e commits em inglês.

@@ -1,13 +1,17 @@
-# links-afiliados
+# vukem-links
 
 Guia para agentes: [`.claude/agents.md`](.claude/agents.md). Regras do projeto: [`.claude/rules/project.md`](.claude/rules/project.md). Estado do trabalho: [`PLAN.md`](PLAN.md).
 
-<!-- BEGIN:nextjs-agent-rules -->
+Dashboard de links de afiliado em Go ([vukem](https://github.com/AlexGalhardo/vukem)) com Inertia + React + shadcn/ui e SQLite. Os sites (eletroradar, tudohardware) registram produtos por `PUT /api/v1/links` e apontam os botões para `GET /link?id=`.
 
-## This is NOT the Next.js you know
+## Comandos
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+| Comando | O que faz |
+| --- | --- |
+| `vukem serve` | Servidor de desenvolvimento (Go + Vite) em <http://localhost:3000> |
+| `go vet ./... && go test ./...` | Vet e testes (HTTP falso, sem rede) |
+| `golangci-lint run` | Lint e formatação Go (gofumpt + goimports) |
+| `bun run typecheck && bun run lint:js && bun run build` | Frontend |
+| `bun run e2e` | Playwright (build + servidor com banco novo) |
+| `bash scripts/smoke.sh` | Imagem Docker + compose + contrato público, derruba tudo no fim |
+| `vukem codegen` | Regenera `resources/js/page-props.ts` a partir de `app/pages` |
