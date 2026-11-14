@@ -1,3 +1,0 @@
-[test]
-# Points every test at a throwaway SQLite file before any module opens the database.
-preload = ["./test/setup.ts"]
