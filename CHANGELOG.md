@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Playwright end-to-end test of the main flow (`bun run e2e`), `scripts/smoke.sh` (Docker build, compose up, public contract, `down -v`) and a frontend job in CI.
 - `scripts/integration-smoke.sh` and `docs/integration.md`: boots the dashboard with compose, runs the real eletroradar catalogue sync against it, follows a `/link?id=` click (302) and checks the click in the database. The sites cannot be built against a local dashboard (their dashboard URL is a constant and `?site=` must be public).
 - Open source files: MIT `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, a complete README with screenshots and the API contract; `SECURITY.md` no longer mentions the removed cron endpoint and `qa.ts`.
+- Documentation site (`site/`, Astro 7 + MDX, copied from the vukem-trading shell with the same pinned versions) generated from `README.md` and `docs/`, published to GitHub Pages at `https://alexgalhardo.github.io/vukem-links/` by `.github/workflows/site.yml`. No Docker image.
 - `docs/migration.md` and the "Reescrita no vukem" section of `docs/brainstorming.md`.
 
 ### Removed
