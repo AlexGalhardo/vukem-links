@@ -1,6 +1,7 @@
 package catalog_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/AlexGalhardo/vukem/orm"
@@ -168,7 +169,7 @@ func TestLinkMutations(t *testing.T) {
 		t.Fatal("private URL must be refused")
 	}
 
-	if err := svc.UpdateLink(t.Context(), 999999, "https://amzn.to/9", 0); err != catalog.ErrNotFound {
+	if err := svc.UpdateLink(t.Context(), 999999, "https://amzn.to/9", 0); !errors.Is(err, catalog.ErrNotFound) {
 		t.Fatalf("got %v", err)
 	}
 
@@ -185,7 +186,7 @@ func TestLinkMutations(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := svc.GetLinkDetail(t.Context(), links[0].ID); err != catalog.ErrNotFound {
+	if _, err := svc.GetLinkDetail(t.Context(), links[0].ID); !errors.Is(err, catalog.ErrNotFound) {
 		t.Fatalf("deleted: %v", err)
 	}
 }

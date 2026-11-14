@@ -2,6 +2,7 @@ package catalog_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/AlexGalhardo/vukem/orm"
@@ -241,7 +242,7 @@ func TestCreateProjectSlugTaken(t *testing.T) {
 	t.Parallel()
 
 	svc, p := setup(t)
-	if _, err := svc.CreateProject(t.Context(), "X", p.Slug, "https://x.example.com"); err != catalog.ErrSlugTaken {
+	if _, err := svc.CreateProject(t.Context(), "X", p.Slug, "https://x.example.com"); !errors.Is(err, catalog.ErrSlugTaken) {
 		t.Fatalf("got %v", err)
 	}
 }

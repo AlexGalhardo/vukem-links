@@ -1,0 +1,48 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - errcheck
+    - errorlint
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - unused
+  settings:
+    errcheck:
+      exclude-functions:
+        # Rows.Err is always checked; Close after a full scan carries no new error.
+        - (*database/sql.Rows).Close
+    misspell:
+      ignore-rules:
+        - progresso
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/AlexGalhardo/vukem-links
