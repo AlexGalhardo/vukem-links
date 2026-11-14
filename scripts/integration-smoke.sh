@@ -3,7 +3,7 @@
 # against it, follows a /link?id= click (302) and checks the click landed in the database. Leaves nothing
 # running (down -v on exit). See docs/integration.md for why the sites themselves are not built here.
 #
-#   ELETRORADAR_DIR=../example.com bash scripts/integration-smoke.sh
+#   ELETRORADAR_DIR=<path to the site checkout> SITE_URL=<public origin of the site> bash scripts/integration-smoke.sh
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -13,9 +13,9 @@ export PORT="${PORT:-3056}"
 export ADMIN_PASSWORD="${ADMIN_PASSWORD:-integration-password-123}"
 export LINKS_API_KEY="${LINKS_API_KEY:-integration-links-api-key-0123456789abcdef}"
 export COMPOSE_PROJECT_NAME=vukem-links-integration
-eletro="${ELETRORADAR_DIR:-../example.com}"
+eletro="${ELETRORADAR_DIR:?set ELETRORADAR_DIR to the eletroradar checkout}"
 # The dashboard only accepts a public, live site and probes it itself, so the sync names the real origin.
-site_url="${SITE_URL:-https://example.com}"
+site_url="${SITE_URL:?set SITE_URL to the public origin of the site}"
 base="http://127.0.0.1:${PORT}"
 export APP_URL="$base"
 

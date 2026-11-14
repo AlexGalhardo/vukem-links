@@ -16,13 +16,13 @@ Como o dashboard conversa com o eletroradar e o tudohardware, e como testar esse
 
 ```bash
 # precisa de Docker, Bun, internet e do checkout do eletroradar
-ELETRORADAR_DIR=../example.com bash scripts/integration-smoke.sh
+ELETRORADAR_DIR=<checkout do site> SITE_URL=<origem pública do site> bash scripts/integration-smoke.sh
 ```
 
 | Variável | Padrão | Uso |
 | --- | --- | --- |
-| `ELETRORADAR_DIR` | `../example.com` | Checkout do eletroradar com `bun install` feito |
-| `SITE_URL` | `https://example.com` | Origem enviada em `?site=` (ver abaixo) |
+| `ELETRORADAR_DIR` | obrigatória | Checkout do eletroradar com `bun install` feito |
+| `SITE_URL` | obrigatória | Origem pública do site, enviada em `?site=` (ver abaixo) |
 | `PORT` | `3056` | Porta do dashboard no host |
 | `ADMIN_PASSWORD`, `LINKS_API_KEY` | valores de teste | Credenciais descartáveis do compose |
 
