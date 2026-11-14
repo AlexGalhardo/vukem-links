@@ -21,3 +21,7 @@ node_modules/
 # Playwright
 /test-results/
 /playwright-report/
+
+# Docs site
+/site/out/
+/site/.astro/
