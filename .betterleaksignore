@@ -1,0 +1,14 @@
+# Reviewed findings in this repo's history: test fixtures and the .env.example
+# placeholder, none of them a real secret (reviewed 2026-11-14, Betterleaks
+# v1.9.0). Format: commit:file:rule:line. Add a line only after checking the
+# finding is not a secret; rotate a real one instead.
+0e8f76da5bca871fdfd42575a1eccf29c2a245c6:.env.example:generic-password:11
+0e8f76da5bca871fdfd42575a1eccf29c2a245c6:qa.ts:generic-password:204
+210195bf2400bdf8a5908a402eff5cf6f086e634:lib/env.test.ts:generic-password:21
+27ec6b33a27ff8f37e214f69edec8f09f687ee5a:tests/auth_test.go:generic-password:104
+27ec6b33a27ff8f37e214f69edec8f09f687ee5a:tests/auth_test.go:generic-password:50
+27ec6b33a27ff8f37e214f69edec8f09f687ee5a:tests/auth_test.go:generic-password:71
+62f60804fdf4913699978a20c91147a1efab9f61:tests/helpers_test.go:generic-password:26
+e0047d4b9f909ceb8b725f113372764f17dbe466:e2e/main-flow.spec.ts:generic-password:25
+e0047d4b9f909ceb8b725f113372764f17dbe466:e2e/main-flow.spec.ts:generic-password:36
+e0047d4b9f909ceb8b725f113372764f17dbe466:scripts/e2e-server.ts:generic-password:24
