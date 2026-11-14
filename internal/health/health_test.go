@@ -320,3 +320,26 @@ func TestFindDeadURLs(t *testing.T) {
 		t.Fatalf("duplicates are probed once, got %d calls", n)
 	}
 }
+
+func TestCheckAllCoversEveryLinkAcrossBatches(t *testing.T) {
+	t.Parallel()
+
+	e := setup(t, func(string) (*http.Response, error) { return status(200) })
+	e.add(t, "all", "https://shop.example.com/1", "https://shop.example.com/2", "https://shop.example.com/3",
+		"https://shop.example.com/4", "https://shop.example.com/5")
+	e.checker.Batch = 2
+
+	sum, err := e.checker.CheckAll(t.Context())
+	if err != nil || sum.Checked != 5 || sum.OK != 5 {
+		t.Fatalf("%+v %v", sum, err)
+	}
+
+	seen := map[string]bool{}
+	for _, c := range e.net.calls {
+		seen[c] = true
+	}
+
+	if len(seen) != 5 {
+		t.Fatalf("every link is probed exactly once: %v", e.net.calls)
+	}
+}
