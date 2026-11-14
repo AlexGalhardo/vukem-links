@@ -11,7 +11,9 @@
     "MD013": false,
     // Keep a Changelog repeats "### Added" under each release.
     "MD024": { "siblings_only": true },
-    "MD033": { "allowed_elements": ["details", "summary", "br", "img", "kbd"] },
+    // The README header (centered title and badges) follows the other vukem apps.
+    "MD033": { "allowed_elements": ["details", "summary", "br", "img", "kbd", "div", "h1", "h3", "strong", "a"] },
+    "MD041": false,
     "MD046": { "style": "fenced" },
     // Table column alignment is not enforced.
     "MD060": false
