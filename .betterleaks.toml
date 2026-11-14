@@ -42,3 +42,18 @@ regexes = [
 	'''_FAKE_|(?i)placeholder|changeme|example''',
 	'''(?i)x{8,}|\.\.\.$''',
 ]
+
+# Test fixtures log in with throwaway passwords. Allowlisted by path, not by
+# .betterleaksignore fingerprint: fingerprints carry the commit hash and break
+# after every rebase merge. Reviewed 2026-11-14; any other rule still fires.
+[[allowlists]]
+description = "throwaway passwords in tests, e2e fixtures and .env.example"
+targetRules = ["generic-password"]
+paths = [
+	'''^tests/.*_test\.go$''',
+	'''^e2e/.*\.spec\.ts$''',
+	'''^scripts/e2e-server\.ts$''',
+	'''^lib/env\.test\.ts$''',
+	'''^qa\.ts$''',
+	'''^\.env\.example$''',
+]
