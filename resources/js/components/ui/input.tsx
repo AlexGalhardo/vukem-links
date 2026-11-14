@@ -2,20 +2,23 @@ import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTML
 
 import { cn } from "../../lib/utils";
 
+// Controls fill their container unless the caller sets a width (w-auto, w-48, ...).
+const width = (className?: string): string => (className?.split(" ").some((c) => c.startsWith("w-")) ? "" : "w-full");
+
 const control =
-  "w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground " +
+  "rounded-md border border-input bg-transparent px-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground " +
   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50";
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn(control, "h-9 py-1", className)} {...props} />;
+  return <input className={cn(control, width(className), "h-9 py-1", className)} {...props} />;
 }
 
 export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn(control, "min-h-20 py-2", className)} {...props} />;
+  return <textarea className={cn(control, width(className), "min-h-20 py-2", className)} {...props} />;
 }
 
 export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={cn(control, "h-9 py-1", className)} {...props} />;
+  return <select className={cn(control, width(className), "h-9 py-1", className)} {...props} />;
 }
 
 interface FieldProps {
