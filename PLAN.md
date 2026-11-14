@@ -31,6 +31,8 @@ Decisões e motivos: [`docs/brainstorming.md`](docs/brainstorming.md). Mapa do c
 
 ## Pendências (dependem do dev)
 
+- [x] 12.c Integração local: `scripts/integration-smoke.sh` (sync real do eletroradar, clique 302 e clique no banco). Os sites não entram no compose: [`docs/integration.md`](docs/integration.md).
+- [x] 12.d Open source: README, LICENSE (MIT, confirmar), CONTRIBUTING, CODE_OF_CONDUCT. Site de docs no GitHub Pages ainda não criado.
 - [ ] Rodar `import:legacy` com um export real do banco Turso de produção (só testado com um banco no schema do Drizzle) e conferir as contagens.
 - [ ] Decidir onde hospedar a imagem (Railway, Fly, VPS) e trocar o `LINKS_DASHBOARD_TOKEN`/URL dos sites só se o endereço mudar (o contrato não muda).
 - [ ] Publicar a 7.0.0 (bump, changelog, tag, GitHub Release) e então apontar o domínio para o app novo.

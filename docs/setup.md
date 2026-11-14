@@ -49,7 +49,7 @@ docker compose exec app /app/app import:seed -file /tmp/seed.json   # depois de 
 docker compose down -v
 ```
 
-O entrypoint do compose roda `migrate`, `admin:create` e `serve` (as duas primeiras são seguras de repetir). `bash scripts/smoke.sh` automatiza build, subida, checagem do contrato público e `down -v`.
+O entrypoint do compose roda `migrate`, `admin:create` e `serve` (as duas primeiras são seguras de repetir). `bash scripts/smoke.sh` automatiza build, subida, checagem do contrato público e `down -v`. `bash scripts/integration-smoke.sh` roda o sync real do eletroradar contra o app ([`integration.md`](integration.md)).
 
 ## Testes
 
