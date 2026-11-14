@@ -10,8 +10,7 @@
     "lint:md": "markdownlint-cli2 \"**/*.md\"",
     "dev": "vite",
     "build": "vite build",
-    "build:ssr": "vite build --ssr",
-    "typecheck": "bun check"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@inertiajs/react": "3.11.0",
