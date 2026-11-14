@@ -1,0 +1,64 @@
+---
+title: "Fluxos de trabalho"
+description: "Como uma mudança vai do editor até produção: tarefa, commit, release e deploy. As convenções (SemVer, formato do changelog e dos commits) estão em conventions.md; aqui ficam os passos e os comandos."
+---
+Como uma mudança vai do editor até produção: tarefa, commit, release e deploy. As convenções (SemVer, formato do changelog e dos commits) estão em [`conventions.md`](/docs/project/conventions); aqui ficam os passos e os comandos.
+
+## Tarefa
+
+1. Leia [`PLAN.md`](https://github.com/AlexGalhardo/vukem-links/blob/main/PLAN.md) e as regras em [`.claude/rules/project.md`](https://github.com/AlexGalhardo/vukem-links/blob/main/.claude/rules/project.md).
+2. Escreva o teste antes: regra pura em `internal/rules`, dados em `internal/catalog` / `internal/health`, contrato HTTP em `tests/`.
+3. Valide com o passo mais estreito enquanto itera e com o gate no fim:
+
+   ```bash
+   go vet ./... && go test ./... && golangci-lint run
+   bun run typecheck && bun run lint:js && bun run build
+   ```
+
+   Se tocou fluxo de usuário, `bun run e2e`; se tocou `Dockerfile`, `compose.yaml` ou o contrato público, `bash scripts/smoke.sh`.
+4. Registre a mudança em `## [Unreleased]` do [`CHANGELOG.md`](/changelog) e atualize o `PLAN.md`. Se mudou como o projeto é operado, atualize a documentação e o índice em [`.claude/agents.md`](https://github.com/AlexGalhardo/vukem-links/blob/main/.claude/agents.md).
+
+Um commit por problema, em microcommits. Ative os hooks com `git config core.hooksPath .githooks`.
+
+## Commit
+
+```bash
+git add <arquivos>
+git commit -m "feat(health): mark link dead after three consecutive failures"
+```
+
+O hook `commit-msg` exige Conventional Commits; o `pre-commit` roda a varredura de segredos (se o `betterleaks` estiver instalado), `gofmt` e `go vet`.
+
+## Release
+
+Regra do repositório: **todo commit enviado ao remoto vira uma versão**, com tag anotada `vX.Y.Z` e GitHub Release contendo a seção daquela versão do `CHANGELOG.md`. Por isso bump, changelog e código vão no mesmo commit.
+
+1. Escolha o bump pelo conteúdo ([`conventions.md`](/docs/project/conventions#versionamento--semver-200)).
+2. Atualize `CHANGELOG.md` (o conteúdo de `[Unreleased]` vira `## [X.Y.Z] - AAAA-MM-DD`, com links de comparação no rodapé), `package.json` (`"version"`) e `PLAN.md`.
+3. Valide, commite, crie a tag e envie:
+
+   ```bash
+   git tag -a vX.Y.Z -m "vX.Y.Z"
+   git push origin main vX.Y.Z
+   ```
+
+4. Crie a release com as notas daquela versão:
+
+   ```bash
+   awk -v v="X.Y.Z" 'index($0, "## [" v "]") == 1 { on = 1; next } /^## \[/ { on = 0 } on' CHANGELOG.md > release-notes.md
+   gh release create vX.Y.Z --repo AlexGalhardo/vukem-links --title vX.Y.Z --notes-file release-notes.md
+   rm release-notes.md
+   ```
+
+Push, tag e release só quando o dono pedir na sessão. Nunca force o push em `main`.
+
+## Deploy
+
+O app é um binário único (ou a imagem do `Dockerfile`) com um volume para `storage/`. Qualquer host que rode a imagem serve: Railway, Fly, VPS com Docker. **Deploy, variáveis e banco de produção só a pedido explícito do dono.**
+
+- Variáveis: [`setup.md`](/docs/setup#variáveis-de-ambiente). `APP_KEY`, `APP_URL` (https), `ADMIN_*` e `LINKS_API_KEY` são as essenciais.
+- O entrypoint do compose migra o banco antes de subir. Em outras plataformas, defina o comando de start como `/app/app migrate && /app/app admin:create && /app/app serve` (via shell) ou rode `migrate` como passo de release.
+- Persistência: monte um volume em `/app/storage`; sem ele o SQLite some a cada deploy.
+- Verificação: `curl -s https://<host>/health` responde `{"status":"ok"}` e `/login` responde 200.
+- O scheduler (`links:health` de hora em hora, relatório semanal) roda dentro do `serve`; com mais de uma réplica rode só uma com o scheduler (`SCHEDULE_IN_SERVE=false` nas outras).
+- Trocar do Vercel/Turso para esta versão: [`migration.md`](/docs/migration). A produção atual (`links.example.com` na Vercel) **não foi alterada**.

@@ -1,0 +1,68 @@
+---
+title: "Ferramentas"
+description: "O que cada ferramenta faz neste projeto, onde está configurada e como é chamada. As regras de dependência estão em conventions.md."
+---
+O que cada ferramenta faz neste projeto, onde está configurada e como é chamada. As regras de dependência estão em [`conventions.md`](/docs/project/conventions#dependências).
+
+## Backend
+
+| Ferramenta | Papel | Configuração |
+| --- | --- | --- |
+| Go 1.27 | Linguagem e testes (`go test`) | `go.mod` |
+| vukem 0.43.0 | Framework: rotas, ORM, auth, scheduler, Inertia, migrations, `vukemtest` | `bootstrap/app.go` registra tudo |
+| CLI `vukem` | `serve` (Go + Vite com reload), `migrate`, `key:generate`, `codegen`, `route:list` | `go install github.com/AlexGalhardo/vukem/cmd/vukem@v0.43.0` |
+| SQLite (modernc, via vukem) | Banco em arquivo | `DATABASE_URL` |
+| `golangci-lint` 2 | Lint + `gofumpt` + `goimports` (`golangci-lint run`, `golangci-lint fmt`) | `.golangci.yml` |
+| govulncheck | Vulnerabilidades (ferramenta do `go.mod`: `go tool govulncheck ./...`) | CI |
+
+Comandos do app (binário `cmd/app`, ou `vukem <comando>`): `migrate`, `serve`, `schedule:list`, `schedule:run`, `route:list`, `admin:create`, `import:seed`, `import:legacy`.
+
+## Frontend
+
+| Ferramenta | Papel | Configuração |
+| --- | --- | --- |
+| Bun 1.4 | Gerenciador de pacotes e executor de scripts | `package.json`, `bun.lock` |
+| Vite 8 + `@inertiajs/vite` | Build e resolução das páginas | `vite.config.ts` |
+| Inertia 3 + React 19 | Páginas (`resources/js/pages`) com props tipadas em Go | `app/pages/pages.go` → `vukem codegen` → `resources/js/page-props.ts` |
+| Tailwind CSS 4 | Estilo; tokens do tema em `resources/css/app.css` | CSS-first (`@theme inline`) |
+| Componentes estilo shadcn/ui | Em `resources/js/components/ui`, escritos no próprio repositório (Button, Input, Card, Badge, Table, Dialog) sobre React + Tailwind, sem Radix, `cva`, `clsx` nem `lucide`; ícones são SVG inline | — |
+| TypeScript 7 | `tsc --noEmit` (`bun run typecheck`) | `tsconfig.json` |
+| Biome | Lint e formatação do frontend (`bun run lint:js`, `bun run format`) | `biome.json` |
+| Playwright 1.63 | E2E (`bun run e2e`) | `playwright.config.ts`, `scripts/e2e-server.ts` |
+
+Scripts: `dev`, `build`, `typecheck`, `lint:js`, `lint:md`, `format`, `secrets:scan`, `e2e`.
+
+## Qualidade e processo
+
+| Ferramenta | Papel | Configuração |
+| --- | --- | --- |
+| Hooks do git | `commit-msg` valida Conventional Commits; `pre-commit` roda as verificações rápidas. Ative com `git config core.hooksPath .githooks` | `.githooks/` |
+| markdownlint-cli2 | Estilo dos `.md` (`bun run lint:md`) | `.markdownlint-cli2.jsonc` |
+| betterleaks | Varredura de segredos (`bun run secrets:scan`) | `.betterleaks.toml` |
+| GitHub Actions | `go` (gofmt, vet, `go test -race`), `vuln`, `secrets`, `image`, `markdown`, `web` | `.github/workflows/ci.yml` |
+
+## Infraestrutura
+
+| Caminho | Conteúdo |
+| --- | --- |
+| `Dockerfile` | Três estágios com tag fixa e digest: Bun (assets), Go (binário estático), Alpine (usuário `app`) |
+| `compose.yaml` | O app, volume `links-data`, healthcheck em `/health`. HTTP direto; proxy, se houver, é Caddy |
+| `scripts/smoke.sh` | Build, subida, contrato público e `down -v` |
+| `scripts/e2e-server.ts` | Compila o app e sobe com banco novo para o Playwright |
+
+## CLIs externos
+
+| CLI | Uso aqui | Referência |
+| --- | --- | --- |
+| `gh` | Criação das GitHub Releases, logs do CI | [`workflows.md`](/docs/project/workflows#release) |
+| `docker` | Imagem e smoke | [`setup.md`](/docs/setup#docker) |
+
+## Para agentes
+
+| Caminho | Conteúdo |
+| --- | --- |
+| [`.claude/agents.md`](https://github.com/AlexGalhardo/vukem-links/blob/main/.claude/agents.md) | Mapa do código e índice da documentação (importado por `CLAUDE.md`; `AGENTS.md` aponta para ele) |
+| [`.claude/rules/project.md`](https://github.com/AlexGalhardo/vukem-links/blob/main/.claude/rules/project.md) | Regras do projeto |
+| `.claude/skills/links-*` | Skills do projeto: verificação local, endpoint seguro, mudança de banco, release |
+| `.claude/skills/ponytail*` | Skill de terceiros, origem do comentário `// ponytail:` ([`SOURCES.md`](https://github.com/AlexGalhardo/vukem-links/blob/main/.claude/skills/SOURCES.md)) |
+| [`PLAN.md`](https://github.com/AlexGalhardo/vukem-links/blob/main/PLAN.md) | Estado atual e pendências: leia antes, atualize depois |

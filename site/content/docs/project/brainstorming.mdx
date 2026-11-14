@@ -1,0 +1,85 @@
+---
+title: "Brainstorming — v5"
+description: "Registro das decisões de produto e técnicas tomadas em 2026-10-10, antes da reescrita v5. Serve de histórico: explica o porquê. O estado atual do trabalho fica em PLAN.md."
+---
+Registro das decisões de produto e técnicas tomadas em 2026-10-10, antes da reescrita v5.
+Serve de histórico: explica o *porquê*. O estado atual do trabalho fica em [`PLAN.md`](https://github.com/AlexGalhardo/vukem-links/blob/main/PLAN.md).
+
+## Objetivo
+
+Dashboard pessoal (um admin) para gerenciar links de afiliado usados em vários projetos. Três perguntas centrais:
+
+1. **O link ainda existe?** Está disponível?
+2. **Onde está o link?** Em qual projeto e em qual página?
+3. **Quantos cliques recebeu?** Em desktop ou mobile?
+
+## Ponto de partida (v4)
+
+- Hierarquia `master_categories > categories > subcategories > links`; `subcategories.externalId` guardava a URL da página do produto.
+- Redirect client-side em `/link?id=`: sorteava um link da subcategoria e somava um contador.
+- Clique era só um número: sem data, device ou origem.
+- Nenhuma checagem de saúde. Nenhum conceito de projeto.
+- shadcn/ui + Radix, next-auth v4, dezenas de dependências sem uso.
+
+## Decisões
+
+| Tema | Decisão | Motivo |
+| --- | --- | --- |
+| Consumo dos links | Todo clique passa por `/link?id=` deste app | Único jeito de medir clique e device com certeza |
+| Projetos | 2 a 5; entidade `projects` com filtro e página própria | Responde "onde está o link" |
+| Lojas | Mercado Livre, Amazon, Shopee e outras | Loja é detectada pelo host da URL (`detectStore`) |
+| Hierarquia | `projeto > produto > links`; categoria vira texto opcional | Quatro níveis não respondiam nenhuma das três perguntas |
+| Links por produto | Vários, com **prioridade manual**; redirect usa o primeiro não morto | Substitui o sorteio: previsível e auditável |
+| Todos os links mortos | 302 para a página do produto + alerta Telegram | Visitante nunca cai em página quebrada |
+| URL legada | `/link?id=<externalId>` mantida, agora route handler server-side (302) | Zero alteração nos projetos já publicados |
+| Saúde | GET seguindo redirects; guarda status HTTP e URL final | Sem scraping por loja: frágil e bloqueado |
+| Morto quando | 3 falhas seguidas (404/410/5xx, erro de rede, redirect para a home) | Evita falso positivo por instabilidade |
+| Inconclusivo | 401/403/429 e timeout não contam como falha | Lojas bloqueiam bots |
+| Quando checar | Cron diário (Vercel), botão manual, alerta Telegram ao morrer | — |
+| Dados do clique | device, SO, navegador, país, página de origem, flag de bot | País via header da Vercel; nenhum IP é guardado |
+| Bots | Gravados com `is_bot`, fora das contagens | Mantém visibilidade sem inflar números |
+| Retenção | Tudo, sem job de limpeza | Volume pessoal é baixo |
+| Bitly | Removido | Duplicava o redirect e escondia device/origem |
+| Migração | Preservar dados; contador antigo vira `legacy_clicks` | Histórico não se perde, mas não tem device nem data |
+| Cadastro | Formulário, importação JSON/CSV, API por token de projeto | Um único caminho de escrita (`upsertProducts`) |
+| Deploy | Vercel + Turso; Docker só para teste local | Mantém o atual |
+| Auth | Better Auth, e-mail e senha, cadastro público desligado | Pedido explícito; next-auth v4 está em manutenção |
+| UI | Base UI + Tailwind v4, pt-BR, densa, claro/escuro pelo sistema | Pedido explícito; shadcn removido |
+| Dados no cliente | TanStack Query | Pedido explícito; tabela filtra em memória, mutações invalidam o cache |
+| QA | `qa.ts` (Playwright), `bun test`, workflow de CI só manual | Billing do GitHub Actions pendente: o `pre-push` roda o mesmo gate |
+| Dependências | Remover o que não é importado; versões estáveis e exatas | — |
+
+## Abordagens consideradas
+
+- **A — incremental por fases, no lugar (escolhida).** `/link?id=` nunca quebra; cada fase é validável.
+- **B — reescrita em branch separada com troca no fim.** Mais limpo, mas longo período sem deploy.
+- **C — só backend agora, UI depois.** Entrega tracking cedo, porém retrabalha as telas.
+
+## Riscos conhecidos
+
+- **Falso "vivo".** Loja devolve 200 para produto esgotado ou removido. Links curtos do Mercado Livre (`/sec/…`) terminam na página social do afiliado, não no produto: a checagem só detecta link quebrado, não produto indisponível.
+- **Open redirect.** O fallback usa `products.page_url`; por isso ela é validada contra o domínio do projeto na escrita.
+- **SSRF.** A checagem faz fetch de URLs cadastradas; hosts privados e esquemas não http(s) são recusados na escrita. Redirects intermediários não são revalidados.
+- **Ciclo da checagem.** Um cron diário cobre 400 links; catálogo maior leva mais dias para completar a volta.
+- **Contadores antigos.** `legacy_clicks` não tem device nem data.
+
+## Ideias adiadas (YAGNI por enquanto)
+
+- Detecção de "produto indisponível" por conteúdo da página, por loja.
+- Agregação diária e expiração de eventos brutos.
+- Comparação entre projetos e exportação CSV.
+- Paginação server-side da tabela (necessária acima de ~5 mil links).
+- Fila (Vercel Queues/Workflows) para a checagem de saúde.
+
+## Reescrita no vukem (7.0.0)
+
+Decisões do dono em 2026-11-14 (ROADMAP 12.a). As seções acima descrevem a v5 (Next.js) e ficam como histórico.
+
+| Tema | Decisão | Motivo |
+| --- | --- | --- |
+| Backend | Go com o framework vukem (0.43.0) | Mesmo stack dos outros projetos; binário único; scheduler, ORM e auth prontos |
+| Frontend | Inertia + React + componentes estilo shadcn/ui, sidebar à la Vercel | Um app só, sem API separada; props tipadas geradas do Go |
+| Banco | SQLite em arquivo (volume) | Dados pequenos; o driver Turso do vukem é experimental. A migração dos dados está em [`migration.md`](/docs/migration) |
+| Auth | Guard de sessão do vukem, um admin criado por comando | Sem cadastro nem e-mail |
+| Contrato | Idêntico: `/link`, `PUT/POST /api/v1/links`, `/health` | Os sites não mudam |
+| Deploy | Imagem Docker com HTTP direto | Sai o acoplamento com a Vercel (os crons viraram o scheduler) |
