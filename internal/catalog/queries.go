@@ -61,7 +61,18 @@ func (s *Service) ListLinks(ctx context.Context, projectID int64) ([]LinkRow, er
 		args = append(args, projectID)
 	}
 
-	return orm.Raw[LinkRow](ctx, s.DB, query+" ORDER BY p.name, l.priority", args...)
+	rows, err := orm.Raw[LinkRow](ctx, s.DB, query+" ORDER BY p.name, l.priority", args...)
+
+	return nonNil(rows), err
+}
+
+// nonNil keeps an empty result a JSON [] instead of null for the pages.
+func nonNil[T any](rows []T) []T {
+	if rows == nil {
+		return []T{}
+	}
+
+	return rows
 }
 
 // ProjectRow is a project with its totals, for the projects list.
@@ -78,7 +89,7 @@ type ProjectRow struct {
 
 // ListProjects returns every project with its totals.
 func (s *Service) ListProjects(ctx context.Context) ([]ProjectRow, error) {
-	return orm.Raw[ProjectRow](ctx, s.DB, `SELECT pr.id AS id, pr.name AS name, pr.slug AS slug, pr.base_url AS base_url,
+	rows, err := orm.Raw[ProjectRow](ctx, s.DB, `SELECT pr.id AS id, pr.name AS name, pr.slug AS slug, pr.base_url AS base_url,
 		(SELECT COUNT(*) FROM products p WHERE p.project_id = pr.id) AS products,
 		(SELECT COUNT(*) FROM affiliate_links l JOIN products p ON p.id = l.product_id WHERE p.project_id = pr.id) AS links,
 		(SELECT COUNT(*) FROM affiliate_links l JOIN products p ON p.id = l.product_id
@@ -86,6 +97,8 @@ func (s *Service) ListProjects(ctx context.Context) ([]ProjectRow, error) {
 		(SELECT COUNT(*) FROM click_events e JOIN products p ON p.id = e.product_id
 			WHERE p.project_id = pr.id AND e.is_bot = 0 AND e.link_id IS NOT NULL) AS clicks
 		FROM projects pr ORDER BY pr.name`)
+
+	return nonNil(rows), err
 }
 
 // Bucket is a value with how many clicks it got.
@@ -192,8 +205,10 @@ func (s *Service) GetStats(ctx context.Context, sc StatsScope) (Stats, error) {
 	}
 
 	group := func(column string) ([]Bucket, error) {
-		return orm.Raw[Bucket](ctx, s.DB, "SELECT COALESCE("+column+", '—') AS key, COUNT(*) AS count"+from+window+
+		rows, err := orm.Raw[Bucket](ctx, s.DB, "SELECT COALESCE("+column+", '—') AS key, COUNT(*) AS count"+from+window+
 			" GROUP BY "+column+" ORDER BY COUNT(*) DESC LIMIT 8", windowArgs...)
+
+		return nonNil(rows), err
 	}
 
 	var err error

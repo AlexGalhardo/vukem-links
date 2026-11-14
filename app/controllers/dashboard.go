@@ -69,7 +69,7 @@ func (h *Dashboard) Overview(c *web.Ctx) error {
 		}
 	}
 
-	top := slices.Clone(links)
+	top := append([]catalog.LinkRow{}, links...)
 	slices.SortStableFunc(top, func(a, b catalog.LinkRow) int { return b.Clicks - a.Clicks })
 	props.TopLinks = top[:min(10, len(top))]
 

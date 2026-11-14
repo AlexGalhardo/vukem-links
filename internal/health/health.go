@@ -145,7 +145,7 @@ type target struct {
 	productName string
 }
 
-func (c *Checker) targets(ctx context.Context, ids []int64) ([]target, error) {
+func (c *Checker) targets(ctx context.Context, ids []int64, limit int) ([]target, error) {
 	q := orm.QueryOf[models.AffiliateLink](c.DB)
 
 	if ids != nil {
@@ -159,6 +159,10 @@ func (c *Checker) targets(ctx context.Context, ids []int64) ([]target, error) {
 		batch := c.Batch
 		if batch <= 0 {
 			batch = DefaultBatch
+		}
+
+		if limit > 0 {
+			batch = min(batch, limit)
 		}
 
 		// NULL (never checked) sorts first in ascending order.
@@ -193,7 +197,13 @@ func (c *Checker) targets(ctx context.Context, ids []int64) ([]target, error) {
 // Check probes the given links, or the Batch least recently checked ones when
 // ids is nil, records each check and alerts when links die.
 func (c *Checker) Check(ctx context.Context, ids []int64) (Summary, error) {
-	targets, err := c.targets(ctx, ids)
+	return c.run(ctx, ids, 0)
+}
+
+// run is Check with a cap on the batch, so CheckAll's last batch does not
+// probe links it already checked.
+func (c *Checker) run(ctx context.Context, ids []int64, limit int) (Summary, error) {
+	targets, err := c.targets(ctx, ids, limit)
 	if err != nil {
 		return Summary{}, err
 	}
@@ -300,7 +310,7 @@ func (c *Checker) CheckAll(ctx context.Context) (Summary, error) {
 	var sum Summary
 
 	for sum.Checked < int(total) {
-		part, err := c.Check(ctx, nil)
+		part, err := c.run(ctx, nil, int(total)-sum.Checked)
 
 		sum.Checked += part.Checked
 		sum.OK += part.OK
