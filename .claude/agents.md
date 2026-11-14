@@ -49,6 +49,7 @@ Contratos, segurança, dados, UI e processo: [`rules/project.md`](rules/project.
 | [`docs/health-check.md`](../docs/health-check.md) | Como um link vira vivo, morto ou inconclusivo |
 | [`docs/api.md`](../docs/api.md) | Contrato com os sites: `/link`, `PUT`/`POST /api/v1/links`, `/health` e formatos de importação |
 | [`docs/auth.md`](../docs/auth.md) | Login do administrador |
+| [`docs/integration.md`](../docs/integration.md) | Smoke de integração com o eletroradar e por que os sites não são buildados no compose |
 | [`docs/migration.md`](../docs/migration.md) | Migração do Next.js/Turso para o vukem |
 | [`docs/conventions.md`](../docs/conventions.md) | SemVer, Keep a Changelog, Conventional Commits, dependências e estilo de código |
 | [`docs/PROMPT SEED.md`](../docs/PROMPT%20SEED.md) | Histórico: prompt original que gerou o seed legado (não descreve o estado atual) |
