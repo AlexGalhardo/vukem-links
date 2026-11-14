@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **docs:** Rewrite the README in English in the layout of the other vukem apps (centered header with CI, license, Go and version badges, summary, features, quick start, API contract, stability, contributing); the docs site drops the GitHub-only header when it syncs the README.
 - **Rewrite on the vukem framework (Go) with Inertia + React and a shadcn/ui-style interface**, replacing Next.js, Drizzle, Turso and Better Auth. The public contract is unchanged: `GET /link?id=<externalId>[&store=]` (302), `PUT`/`POST /api/v1/links?site=` with the shared `LINKS_API_KEY`, and `GET /health` (CORS `*`) answer exactly as before (`tests/api_test.go` pins it).
 - The dashboard has a Vercel-style sidebar (overview, links, projects), light and dark themes, and confirmation dialogs that say what will be erased. Interface texts stay in Portuguese.
 - The database is a SQLite file (volume `links-data` in Docker) with integer ids and ISO 8601 UTC dates; `external_id`, the public identifier, is unchanged.

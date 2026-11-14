@@ -1,106 +1,148 @@
-# vukem-links
+<div align="center">
+
+<h1><strong><a href="https://alexgalhardo.github.io/vukem-links/" target="_blank">vukem-links</a></strong></h1>
 
 [![CI](https://github.com/AlexGalhardo/vukem-links/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexGalhardo/vukem-links/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Go 1.27.4](https://img.shields.io/badge/go-1.27.4-00ADD8?logo=go&logoColor=white)](go.mod)
+<a href="https://github.com/AlexGalhardo/vukem-links/releases"><img src="https://img.shields.io/github/v/release/AlexGalhardo/vukem-links?include_prereleases&label=version" alt="Version"></a>
 
-Dashboard open source para gerenciar links de afiliado usados em vários sites.
+<h3><strong>Open Source Affiliate Links Dashboard: Health Checks, Redirects and Click Analytics</strong></h3>
 
-- **O link ainda existe?** Checagem de saúde de hora em hora, com fallback automático para o próximo link vivo.
-- **Onde ele está?** Cada link pertence a um produto (página) de um projeto.
-- **Quantos cliques?** Cada clique registra device, sistema, navegador, país e página de origem (sem IP). Bots não contam.
+</div>
 
-Todo clique passa por `GET /link?id=<id do produto>`, que redireciona (302) para o link de afiliado ativo. Os sites registram o catálogo no build com `PUT /api/v1/links?site=`.
+## Introduction
 
-## Screenshots
+vukem-links is a personal, open source dashboard for the affiliate links used across several websites. It answers three questions: is the link still alive, where is it (project and page), and how many clicks did it get, on desktop or mobile.
 
-| Visão geral | Links |
+Every click goes through `GET /link?id=<product id>`, which redirects (302) to the active affiliate link. The websites register their catalog at build time with `PUT /api/v1/links?site=`.
+
+The application is written in Go on the [Vukem framework](https://vukem.dev), with an Inertia 3, React 19 and Tailwind CSS 4 dashboard (shadcn/ui-style components written in the repository), SQLite and Playwright. The dashboard interface is in Brazilian Portuguese. The full documentation is at <https://alexgalhardo.github.io/vukem-links/>.
+
+| Overview | Links |
 | --- | --- |
-| ![Visão geral](docs/screenshots/overview.png) | ![Links](docs/screenshots/links.png) |
+| ![Overview](docs/screenshots/overview.png) | ![Links](docs/screenshots/links.png) |
+
+## Summary
+
+- [Introduction](#introduction)
+- [Features](#features)
+- [Quick start](#quick-start)
+- [API contract](#api-contract)
+- [Documentation](#documentation)
+- [Stability](#stability)
+- [Contributing](#contributing)
+- [Code of conduct](#code-of-conduct)
+- [Security vulnerabilities](#security-vulnerabilities)
+- [License](#license)
+
+## Features
+
+- Hourly health check of every link, with automatic fallback to the next live link.
+- Each link belongs to a product (page) of a project; a new website becomes a project on its first sync.
+- Each click records device, operating system, browser, country and referring page (never the IP). Bots do not count.
+- Single admin login, weekly Telegram report and alerts for dead links.
+- Import of the legacy `seed.json` and of the database of the previous Next.js version.
 
 ## Quick start
 
-### Docker
+Docker:
 
-```bash
+```sh
 export APP_KEY="$(go run ./cmd/app key:generate)"
-export ADMIN_PASSWORD=troque-esta-senha LINKS_API_KEY="$(openssl rand -hex 32)"
-docker compose up -d --wait        # http://localhost:3000, dados no volume links-data
-docker compose down                # -v apaga o volume
+export ADMIN_PASSWORD=change-this-password LINKS_API_KEY="$(openssl rand -hex 32)"
+docker compose up -d --wait        # http://localhost:3000, data in the links-data volume
+docker compose down                # -v deletes the volume
 ```
 
-### Local
+Local, with Go, [Bun](https://bun.sh) and the Vukem CLI (`go install github.com/AlexGalhardo/vukem/cmd/vukem@v0.43.0`):
 
-Requer Go, [Bun](https://bun.sh) e a CLI do vukem (`go install github.com/AlexGalhardo/vukem/cmd/vukem@v0.43.0`).
-
-```bash
-cp .env.example .env && vukem key:generate     # APP_KEY no .env; defina ADMIN_PASSWORD e LINKS_API_KEY
+```sh
+cp .env.example .env && vukem key:generate     # APP_KEY in .env; set ADMIN_PASSWORD and LINKS_API_KEY
 bun install
-vukem migrate && vukem admin:create            # banco SQLite em storage/ e a conta de admin
-vukem import:seed                              # opcional: os 381 links do seed.json
+vukem migrate && vukem admin:create            # SQLite database in storage/ and the admin account
+vukem import:seed                              # optional: the 381 links of seed.json
 vukem serve                                    # http://localhost:3000
 ```
 
-Login com `ADMIN_EMAIL` e `ADMIN_PASSWORD` do `.env`. Detalhes em [`docs/setup.md`](docs/setup.md).
+Sign in with `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env`. Details in [docs/setup.md](docs/setup.md).
 
-## Contrato da API
+Checks:
 
-Resumo; o contrato completo (respostas, limites, formatos de importação) está em [`docs/api.md`](docs/api.md).
-
-| Rota | Auth | Uso |
-| --- | --- | --- |
-| `GET /link?id=<externalId>[&store=<loja>]` | Pública | `302` para o link vivo de maior prioridade; `404` se o produto não existe |
-| `GET /health` | Pública | `ok` ou `down`; os sites caem para a loja direto quando não responde |
-| `PUT /api/v1/links?site=<origem>` | `Authorization: Bearer <LINKS_API_KEY>` | Sincronização completa do catálogo do site (cria, atualiza e remove) |
-| `POST /api/v1/links?site=<origem>` | Idem | Acréscimo pontual, sem remover nada |
-
-```bash
-curl -X PUT "http://localhost:3000/api/v1/links?site=https://meusite.com"   -H "Authorization: Bearer $LINKS_API_KEY" -H "Content-Type: application/json"   -d '[{"externalId":"https://meusite.com/fones/x","links":[{"url":"https://amzn.to/abc123"}]}]'
+```sh
+go vet ./... && go test ./...
+golangci-lint run
+bun run typecheck && bun run lint:js && bun run build
+bun run e2e                          # main flow in the browser (Playwright)
+bash scripts/smoke.sh                # Docker image smoke
+bash scripts/integration-smoke.sh    # real eletroradar sync against the dashboard, 302 click and click in the database
 ```
 
-O `site` precisa ser público e responder; chave única para todos os sites. Teste de ponta a ponta com um site real: [`docs/integration.md`](docs/integration.md).
+## API contract
 
-## Stack
+Summary; the full contract (responses, limits, import formats) is in [docs/api.md](docs/api.md).
 
-Go 1.27 · [vukem](https://github.com/AlexGalhardo/vukem) 0.43 (rotas, ORM, auth, scheduler) · Inertia 3 + React 19 + Tailwind CSS 4 com componentes no estilo shadcn/ui · SQLite · Bun (só para o frontend) · Playwright.
+| Route | Auth | Use |
+| --- | --- | --- |
+| `GET /link?id=<externalId>[&store=<store>]` | Public | `302` to the live link with the highest priority; `404` if the product does not exist |
+| `GET /health` | Public | `ok` or `down`; the websites fall back to the store link when it does not answer |
+| `PUT /api/v1/links?site=<origin>` | `Authorization: Bearer <LINKS_API_KEY>` | Full sync of the website catalog (creates, updates and removes) |
+| `POST /api/v1/links?site=<origin>` | Same | One-off addition, removes nothing |
 
-## Comandos
+```sh
+curl -X PUT "http://localhost:3000/api/v1/links?site=https://mysite.com" \
+  -H "Authorization: Bearer $LINKS_API_KEY" -H "Content-Type: application/json" \
+  -d '[{"externalId":"https://mysite.com/headphones/x","links":[{"url":"https://amzn.to/abc123"}]}]'
+```
 
-| Comando | O que faz |
-| --- | --- |
-| `vukem serve` | Desenvolvimento (Go + Vite com reload) |
-| `go test ./...` | Testes Go: regras, catálogo, saúde, API, redirect, login e páginas |
-| `golangci-lint run` | Lint Go |
-| `bun run typecheck` / `lint:js` / `build` | Frontend |
-| `bun run e2e` | Fluxo principal no navegador (Playwright) |
-| `bash scripts/smoke.sh` | Smoke da imagem Docker |
-| `bash scripts/integration-smoke.sh` | Sync real do eletroradar contra o dashboard, clique 302 e clique no banco |
-| `app admin:create` | Cria o admin (`ADMIN_EMAIL`/`ADMIN_PASSWORD`), sem alterar senha existente |
-| `app import:seed` / `import:legacy -from <arquivo>` | Importa o `seed.json` / o banco da versão anterior ([`docs/migration.md`](docs/migration.md)) |
+The `site` must be public and answer; one key serves every website. End-to-end test with a real website: [docs/integration.md](docs/integration.md).
 
-## Documentação
+## Documentation
 
-| | |
-| --- | --- |
-| [Site de docs](https://alexgalhardo.github.io/vukem-links/) | Esta documentação publicada (`site/`) |
-| [`PLAN.md`](PLAN.md) | Estado atual, pendências e próximos passos |
-| [`CHANGELOG.md`](CHANGELOG.md) | Histórico de versões |
-| [`docs/setup.md`](docs/setup.md) | Variáveis de ambiente, local e Docker |
-| [`docs/architecture.md`](docs/architecture.md) | Estrutura, modelo de dados e fluxos |
-| [`docs/api.md`](docs/api.md) | Redirect, API de cadastro (contrato com os sites) e importação |
-| [`docs/health-check.md`](docs/health-check.md) | Como um link é considerado vivo ou morto |
-| [`docs/auth.md`](docs/auth.md) | Login do administrador |
-| [`docs/integration.md`](docs/integration.md) | Smoke de integração com os sites |
-| [`docs/migration.md`](docs/migration.md) | Migração do Next.js/Turso para o vukem |
-| [`docs/tooling.md`](docs/tooling.md) | Ferramentas e configuração |
-| [`docs/workflows.md`](docs/workflows.md) | Commit, release e deploy |
-| [`docs/conventions.md`](docs/conventions.md) | SemVer, changelog e commits |
-| [`docs/brainstorming.md`](docs/brainstorming.md) | Decisões de produto e da reescrita |
-| [`.claude/agents.md`](.claude/agents.md) | Guia para agentes de código |
+- [Docs site](https://alexgalhardo.github.io/vukem-links/): this documentation, published from `site/`.
+- [PLAN.md](PLAN.md): current state, pending work and next steps.
+- [docs/setup.md](docs/setup.md), [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md) and [docs/health-check.md](docs/health-check.md).
+- [docs/auth.md](docs/auth.md), [docs/integration.md](docs/integration.md) and [docs/migration.md](docs/migration.md) (from Next.js/Turso to Vukem).
+- [docs/tooling.md](docs/tooling.md), [docs/workflows.md](docs/workflows.md), [docs/conventions.md](docs/conventions.md) and [docs/brainstorming.md](docs/brainstorming.md).
+- [.claude/agents.md](.claude/agents.md): guide for AI agents.
 
-## Contribuindo
+## Stability
 
-Veja [`CONTRIBUTING.md`](CONTRIBUTING.md) (setup, fluxo, checagens) e o [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Vulnerabilidades: [`SECURITY.md`](SECURITY.md), nunca em issue pública.
+vukem-links follows [Semantic Versioning](https://semver.org) and tags releases as `vX.Y.Z` on `main`. Changes are listed in [CHANGELOG.md](CHANGELOG.md), which follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Release notes are the matching CHANGELOG section. The public contract (`/link`, `/api/v1/links`, `/health`) is fixed by `tests/api_test.go`.
 
-## Licença
+## Contributing
 
-[MIT](LICENSE).
+Thank you for considering a contribution.
+
+- Open an issue first for anything that changes the public contract ([docs/api.md](docs/api.md)).
+- Write the test first. Run the specific test, lint and typecheck that cover your change.
+- Update `CHANGELOG.md` (under `[Unreleased]`) and the documentation in the same change when behavior, commands or conventions change.
+
+The full guide (setup, checks, rules) is in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Pull requests
+
+1. Create a branch from `main`.
+2. Make one logical change per commit.
+3. Open a pull request against `main`; its title is a Conventional Commit.
+
+`main` accepts changes only through a pull request with green required checks and linear history.
+
+### Commits
+
+Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) in English: `type(scope): description`.
+
+- Types: `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, `style`, `revert`.
+- Scopes: `api`, `link`, `health`, `catalog`, `dashboard`, `auth`, `telegram`, `legacy`, `docker`, `ci`, `site`, `deps`, `docs`.
+
+## Code of conduct
+
+To keep the community welcoming to everyone, please review and follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security vulnerabilities
+
+If you discover a security vulnerability, please follow the [security policy](SECURITY.md) instead of opening a public issue.
+
+## License
+
+vukem-links is open source software released under the [MIT license](LICENSE).

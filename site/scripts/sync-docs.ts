@@ -75,7 +75,11 @@ function split(raw: string): { title: string; description: string; body: string 
 		}
 		rest.push(line);
 	}
-	const body = rest.join("\n").replace(/^\s+/, "");
+	// The README opens with a centered HTML header (title and badges) for GitHub; the site page has its own title.
+	const body = rest
+		.join("\n")
+		.replace(/^\s+/, "")
+		.replace(/^<div align="center">[\s\S]*?\n<\/div>\s*/, "");
 	const para = body.split(/\n\s*\n/).find((p) => p.trim() && !/^(#|[-*>|`]|\d+\.)/.test(p.trim()));
 	const plain = (para ?? "")
 		.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
