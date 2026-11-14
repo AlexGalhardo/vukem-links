@@ -17,3 +17,7 @@ node_modules/
 /resources/public/hot
 /resources/public/build/
 /bootstrap/ssr/
+
+# Playwright
+/test-results/
+/playwright-report/
