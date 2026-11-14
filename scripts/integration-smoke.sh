@@ -64,7 +64,7 @@ ua='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Ge
 headers="$work/headers"
 expect "GET /link?id= redirects" 302 "$(curl -s -o /dev/null -D "$headers" -w '%{http_code}' -A "$ua" "$base/link?id=$id")"
 grep -qi '^location: https\?://' "$headers" || { echo "FAIL no Location header" >&2; exit 1; }
-echo "ok   $(grep -i "^location:" "$headers" | tr -d "")"
+echo "ok   $(grep -i '^location:' "$headers" | tr -d '\r')"
 expect "GET /link?id= unknown product" 404 "$(curl -s -o /dev/null -w '%{http_code}' "$base/link?id=nope")"
 
 # The click is recorded in the database (read from a copy of the storage volume).
