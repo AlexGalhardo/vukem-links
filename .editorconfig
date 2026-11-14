@@ -3,27 +3,27 @@ root = true
 [*]
 charset = utf-8
 end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
 indent_style = tab
 indent_size = 4
 tab_width = 4
-insert_final_newline = true
-trim_trailing_whitespace = true
-max_line_length = 120
 
-# The YAML spec forbids tabs for indentation.
+# YAML is indentation-sensitive and forbids hard tabs; Markdown nesting is
+# counted in spaces and markdownlint rejects tabs (MD010).
 [*.{yml,yaml}]
 indent_style = space
 indent_size = 2
 
-# Trailing spaces are a forced line break in Markdown.
 [*.md]
-trim_trailing_whitespace = false
-
-# package.json is rewritten by Bun/npm with 2 spaces; forcing tabs would produce a diff on every install.
-[package.json]
 indent_style = space
 indent_size = 2
 
-[*.lock]
-insert_final_newline = unset
-trim_trailing_whitespace = unset
+# The JavaScript toolchain (package managers, Vite, Prettier) rewrites these
+# files with two spaces, so matching it keeps diffs small.
+[*.{js,mjs,cjs,ts,tsx,jsx,vue,svelte,json,jsonc}]
+indent_style = space
+indent_size = 2
+
+[*.{ps1,psm1,bat,cmd}]
+end_of_line = crlf

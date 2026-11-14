@@ -1,17 +1,31 @@
 {
-	// Rules: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
-	"config": {
-		"default": true,
-		// Technical documentation with tables and long URLs: no line width limit.
-		"MD013": false,
-		// The README uses HTML for the centered header and the badges.
-		"MD033": { "allowed_elements": ["h1", "p", "a", "img", "br", "details", "summary"] },
-		"MD041": false,
-		// The block that `next dev` rewrites in AGENTS.md/CLAUDE.md brings a second level-1 heading.
-		"MD025": false,
-		// The changelog (Keep a Changelog) repeats "Added", "Fixed" etc. in every version.
-		"MD024": { "siblings_only": true }
-	},
-	"globs": ["*.md", "docs/**/*.md", ".github/**/*.md"],
-	"ignores": ["node_modules", ".claude", ".next"]
+  "$schema": "https://raw.githubusercontent.com/DavidAnson/markdownlint-cli2/main/schema/markdownlint-cli2-config-schema.json",
+  "config": {
+    "default": true,
+    "MD003": { "style": "atx" },
+    "MD004": { "style": "dash" },
+    "MD007": { "indent": 2 },
+    // Go fences contain hard tabs (.editorconfig).
+    "MD010": { "code_blocks": false, "ignore_code_languages": ["go"] },
+    // Long lines are fine in prose and tables.
+    "MD013": false,
+    // Keep a Changelog repeats "### Added" under each release.
+    "MD024": { "siblings_only": true },
+    "MD033": { "allowed_elements": ["details", "summary", "br", "img", "kbd"] },
+    "MD046": { "style": "fenced" },
+    // Table column alignment is not enforced.
+    "MD060": false
+  },
+  "globs": ["**/*.md"],
+  "ignores": [
+    "**/node_modules/**",
+    "**/testdata/**",
+    "**/storage/**",
+    "**/.cache/**",
+    "**/coverage/**",
+    "**/dist/**",
+    "**/out/**",
+    "**/.next/**",
+    ".claude/**"
+  ]
 }

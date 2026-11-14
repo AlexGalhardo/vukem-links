@@ -1,28 +1,137 @@
 name: CI
 
-# Manual trigger only while GitHub Actions billing is unresolved: the same gate runs in .husky/pre-push.
-# To enable: replace `workflow_dispatch` with `push: { branches: [main] }` and `pull_request`.
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
+# Each job asks for the scopes it needs and nothing more.
+permissions: {}
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  ci:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    env:
-      BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789
-      BETTER_AUTH_URL: http://localhost:3000
+  go:
+    name: Format, vet and test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          bun-version: 1.4.2
-      - run: bun install --frozen-lockfile
-      - run: bun run ci
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::run gofmt -w on:"
+            echo "$unformatted"
+            exit 1
+          fi
+      - name: go vet
+        run: go vet ./...
+      - name: go test
+        run: go test -race -count=1 ./...
+
+  vuln:
+    name: Vulnerabilities
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      # govulncheck is pinned in go.mod as a Go tool; new advisories appear
+      # after your code ships, so this also runs on a schedule-free rerun.
+      - name: govulncheck
+        run: go tool govulncheck ./...
+      # The lockfile audit is this step, not a package.json script, so editing
+      # a script does not turn it off. A temporary override belongs in
+      # package.json "overrides", with the advisory id and the day you will
+      # delete it, not in this step.
+      - name: audit the JavaScript lockfile
+        run: |
+          if [ -f package-lock.json ]; then
+            npm audit --package-lock-only --audit-level=high
+          elif [ -f bun.lock ] || [ -f bun.lockb ]; then
+            curl -fsSL https://bun.sh/install | bash -s "bun-v1.4.4"
+            export PATH="$HOME/.bun/bin:$PATH"
+            bun install --frozen-lockfile
+            bun audit --audit-level=high
+          elif [ -f package.json ]; then
+            echo "::error::commit package-lock.json or bun.lock; the audit has no lockfile to read"
+            exit 1
+          else
+            echo "no package.json; govulncheck covers the Go modules"
+          fi
+
+  secrets:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # Pinned release and the sha256 of its linux_x64 archive.
+      BETTERLEAKS_VERSION: 1.9.0
+      BETTERLEAKS_SHA256: f8b185a39ffcece2a1ca82bf3a4e7435cd81963ffd16b7a9128daf75f35f6de7
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Betterleaks
+        run: |
+          archive="betterleaks_${BETTERLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSLo "$archive" "https://github.com/betterleaks/betterleaks/releases/download/v${BETTERLEAKS_VERSION}/${archive}"
+          echo "${BETTERLEAKS_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" betterleaks
+          sudo install betterleaks /usr/local/bin/betterleaks
+      # The whole history, with the rules in .betterleaks.toml. Validation
+      # against provider APIs stays off (it would need --validation).
+      # The report step prints the rule, file, line and commit. It does not
+      # print the matched value. A reviewed false positive goes in
+      # .betterleaksignore as commit:file:rule:line.
+      - name: betterleaks
+        run: betterleaks git . --no-banner --redact --report-format json --report-path betterleaks.json
+      - name: print findings
+        if: failure()
+        run: jq -r '.[] | "\(.RuleID) \(.File):\(.StartLine) \(.Commit)"' betterleaks.json
+
+  image:
+    name: Build the production image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The same build Railway, Fly, Render and plain Docker run. It also
+      # covers the front-end build, so a broken asset pipeline fails here.
+      - name: docker build
+        run: docker build -t vukem-links:ci .
+
+  markdown:
+    name: Lint (Markdown)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: DavidAnson/markdownlint-cli2-action@696eb3f2509270d7b882d2aa68347bc676e7af34 # v25.0.0
+        with:
+          globs: "**/*.md"

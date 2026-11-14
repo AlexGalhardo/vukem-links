@@ -8,7 +8,7 @@ Security fixes land on `main` and ship in the next release. Older releases are n
 
 Please do not open a public issue for a security problem.
 
-Report it privately through [GitHub Security Advisories](https://github.com/AlexGalhardo/links.example.com/security/advisories/new). Include:
+Report it privately through [GitHub Security Advisories](https://github.com/AlexGalhardo/vukem-links/security/advisories/new). Include:
 
 - what the problem is and which route, action or file is affected;
 - steps to reproduce it, or a proof of concept;
