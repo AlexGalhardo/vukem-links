@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **docs:** Rewrite the README in English in the layout of the other vukem apps (centered header with CI, license, Go and version badges, summary, features, quick start, API contract, stability, contributing); the docs site drops the GitHub-only header when it syncs the README.
+- **docs:** Rewrite the released CHANGELOG sections and the GitHub release notes in the vukem format (scope, imperative description and commit link per entry) and point the compare links to this repository.
 - **Rewrite on the vukem framework (Go) with Inertia + React and a shadcn/ui-style interface**, replacing Next.js, Drizzle, Turso and Better Auth. The public contract is unchanged: `GET /link?id=<externalId>[&store=]` (302), `PUT`/`POST /api/v1/links?site=` with the shared `LINKS_API_KEY`, and `GET /health` (CORS `*`) answer exactly as before (`tests/api_test.go` pins it).
 - The dashboard has a Vercel-style sidebar (overview, links, projects), light and dark themes, and confirmation dialogs that say what will be erased. Interface texts stay in Portuguese.
 - The database is a SQLite file (volume `links-data` in Docker) with integer ids and ISO 8601 UTC dates; `external_id`, the public identifier, is unchanged.
@@ -35,168 +36,155 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Agent guide, project rules and the four `links-*` skills under `.claude/` were checked against the code: each rule now lives in one place (`.claude/rules/project.md`) and the skills hold only the procedure and link to `docs/`.
-- `links-release` follows the release flow of `docs/workflows.md` (one commit per version, tag, push and GitHub Release) instead of a separate `chore(release)` commit.
-- `docs/qa.md`, `docs/tooling.md`, `docs/conventions.md` and `SECURITY.md` describe the shared `LINKS_API_KEY`, the `PUT` sync, `/health` and the environment check where they still described project tokens.
+- **agents:** Check the agent guide, project rules and the four `links-*` skills against the code: each rule now lives once in `.claude/rules/project.md` and the skills hold only the procedure ([e49adec](https://github.com/AlexGalhardo/vukem-links/commit/e49adec956ae53f5c50086d9b7da04fbb6cf4ec4))
+- **agents:** Make `links-release` follow the release flow of `docs/workflows.md` (one commit per version, tag, push and GitHub Release) instead of a separate `chore(release)` commit ([e49adec](https://github.com/AlexGalhardo/vukem-links/commit/e49adec956ae53f5c50086d9b7da04fbb6cf4ec4))
+- **docs:** Describe the shared `LINKS_API_KEY`, the `PUT` sync, `/health` and the environment check in `docs/qa.md`, `docs/tooling.md`, `docs/conventions.md` and `SECURITY.md` ([e49adec](https://github.com/AlexGalhardo/vukem-links/commit/e49adec956ae53f5c50086d9b7da04fbb6cf4ec4))
 
 ### Removed
 
-- Third-party skills, agents and checklists vendored in `.claude/` that nothing in the project referred to (290 files, about 6.7 MB): the agent-skills pack with `.claude/agents/` and `.claude/references/`, and the `impeccable`, `ui-ux-pro-max`, `vercel-react-best-practices`, `frontend-design`, `minimalist-ui`, `web-design-guidelines` and `graphify` skills. Only `ponytail` stays, because the code convention uses its `// ponytail:` comment. They can be restored from the tag `v6.2.0`.
+- **agents:** Remove the unused third-party skills, agents and checklists vendored in `.claude/` (290 files, about 6.7 MB); only `ponytail` stays, for the `// ponytail:` comment convention, and the rest can be restored from `v6.2.0` ([e49adec](https://github.com/AlexGalhardo/vukem-links/commit/e49adec956ae53f5c50086d9b7da04fbb6cf4ec4))
 
 ### Fixed
 
-- Stale statements in the skills: API tokens stored as SHA-256 (removed in 6.0.0), v4 tables in production, the `_legacy/` folder, and missing entries for `/health`, `proxy.ts`, `lib/env.ts` and the cron guard.
+- **agents:** Fix stale statements in the skills (SHA-256 API tokens, v4 tables, `_legacy/`) and add the missing entries for `/health`, `proxy.ts`, `lib/env.ts` and the cron guard ([e49adec](https://github.com/AlexGalhardo/vukem-links/commit/e49adec956ae53f5c50086d9b7da04fbb6cf4ec4))
 
 ## [6.2.0] - 2026-10-11
 
 ### Added
 
-- Environment check at the start of every build (`scripts/check-env.ts`, schema in `lib/env.ts`, zod 4): a malformed value always fails the build, and a production build fails when an essential variable is missing or the database is a local file. Other builds need no variable.
+- **build:** Check the environment at the start of every build (`scripts/check-env.ts`, schema in `lib/env.ts`): a malformed value always fails, and a production build fails without an essential variable or with a local database file ([210195b](https://github.com/AlexGalhardo/vukem-links/commit/210195bf2400bdf8a5908a402eff5cf6f086e634))
 
 ### Changed
 
-- An address that is not a page redirects to the start page (`proxy.ts`), and so does a link or project that does not exist. `/link` and the API keep their 404 answers.
+- **web:** Redirect an address that is not a page, and a link or project that does not exist, to the start page (`proxy.ts`); `/link` and the API keep their 404 answers ([210195b](https://github.com/AlexGalhardo/vukem-links/commit/210195bf2400bdf8a5908a402eff5cf6f086e634))
 
 ## [6.1.0] - 2026-10-11
 
 ### Added
 
-- Setup scripts for Git Bash on Windows: `setups/setup-windows-local.sh` and `setups/setup-windows-with-docker.sh`.
-- The setup scripts check the required tools (Bun; Docker, Compose and a running daemon for the Docker ones) and say how to install what is missing.
-- The setup scripts generate `BETTER_AUTH_SECRET`, `CRON_SECRET` and `LINKS_API_KEY` in `.env` when they are empty, without replacing existing values or printing them.
-- A busy port no longer breaks the setup: the next free port is used and announced, or the script stops with a clear message when the port was chosen with `PORT`/`APP_PORT`.
-- `--no-start` (or `SETUP_SKIP_START=1`) prepares everything without starting the app.
-- Documentation for AI agents: `docs/agent-setup.md` (setup from zero with a verification per step, including GitHub and Vercel), `docs/tooling.md` and `docs/workflows.md` (commit, release and deploy).
+- **setup:** Add setup scripts for Git Bash on Windows (`setup-windows-local.sh`, `setup-windows-with-docker.sh`) ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
+- **setup:** Check the required tools (Bun; Docker, Compose and a running daemon) and say how to install what is missing ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
+- **setup:** Generate `BETTER_AUTH_SECRET`, `CRON_SECRET` and `LINKS_API_KEY` in `.env` when empty, without replacing or printing existing values ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
+- **setup:** Use and announce the next free port when the port is busy, or stop with a clear message when `PORT`/`APP_PORT` was set ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
+- **setup:** Add `--no-start` (or `SETUP_SKIP_START=1`) to prepare everything without starting the app ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
+- **docs:** Add `docs/agent-setup.md`, `docs/tooling.md` and `docs/workflows.md` for AI agents ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
 
 ### Changed
 
-- The setup scripts were renamed: `setups/unix.sh` is now `setups/setup-unix-local.sh` and `setups/docker.sh` is now `setups/setup-unix-with-docker.sh`.
-- The Docker files moved from `setups/` to `infra/` (`infra/Dockerfile`, `infra/docker-compose.yml`).
-- The Docker setup starts the stack in background, waits until the app answers and reads its secrets and the admin account from the root `.env` instead of built-in defaults (the admin password is no longer `admin-local-123`).
-- The local setup scripts refuse to migrate or seed when `TURSO_DATABASE_URL` is not a local file.
+- **BREAKING:** **setup:** Rename the setup scripts (`setups/unix.sh` → `setups/setup-unix-local.sh`, `setups/docker.sh` → `setups/setup-unix-with-docker.sh`) ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
+- **docker:** Move the Docker files from `setups/` to `infra/` ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
+- **docker:** Start the stack in background, wait until the app answers and read secrets and the admin account from `.env` instead of built-in defaults ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
+- **setup:** Refuse to migrate or seed when `TURSO_DATABASE_URL` is not a local file ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
 
 ### Removed
 
-- The PowerShell scripts `setups/windows.ps1` and `setups/docker.ps1`: on Windows the setup runs in Git Bash.
+- **setup:** Remove the PowerShell scripts `setups/windows.ps1` and `setups/docker.ps1`; on Windows the setup runs in Git Bash ([afc0e1d](https://github.com/AlexGalhardo/vukem-links/commit/afc0e1d626dc0b972902b27fb63b69adf29a7d8c))
 
 ## [6.0.0] - 2026-10-11
 
 ### Added
 
-- A site seen for the first time by the API becomes a project on its own, named after its host. Connecting a new site takes one environment variable on the site and nothing in the dashboard.
-- `GET /health`, public and readable from any origin, so the sites can link straight to the store while the dashboard is down.
+- **api:** Turn a site seen for the first time into a project named after its host, so connecting a site takes one environment variable and nothing in the dashboard ([19a2845](https://github.com/AlexGalhardo/vukem-links/commit/19a28451a1da72f595257f1d9eb6ff89afeaa1a1))
+- **api:** Add `GET /health`, public and readable from any origin, so the sites link straight to the store while the dashboard is down ([19a2845](https://github.com/AlexGalhardo/vukem-links/commit/19a28451a1da72f595257f1d9eb6ff89afeaa1a1))
 
 ### Changed
 
-- **BREAKING:** `/api/v1/links` is authenticated by one key shared by every site (`LINKS_API_KEY`) and the site names itself with `?site=<origin>`. Requests with a project token are refused.
+- **BREAKING:** **api:** Authenticate `/api/v1/links` with one key shared by every site (`LINKS_API_KEY`), with the site named by `?site=<origin>`; project tokens are refused ([19a2845](https://github.com/AlexGalhardo/vukem-links/commit/19a28451a1da72f595257f1d9eb6ff89afeaa1a1))
 
 ### Removed
 
-- **BREAKING:** per-project API tokens, the "Gerar token da API" button and the `projects.api_token_hash` column. Generating a token used to revoke the one a site was using and break its builds.
+- **BREAKING:** **api:** Remove per-project API tokens, the "Gerar token da API" button and the `projects.api_token_hash` column ([19a2845](https://github.com/AlexGalhardo/vukem-links/commit/19a28451a1da72f595257f1d9eb6ff89afeaa1a1))
 
 ## [5.4.0] - 2026-10-11
 
 ### Changed
 
-- The JSON/CSV import of a project now checks every new link before saving: links the project already has and links that answer as dead are skipped, and the result says how many of each.
+- **import:** Check every new link of a JSON/CSV import before saving, skip links the project already has and links that answer as dead, and report how many of each ([5692ace](https://github.com/AlexGalhardo/vukem-links/commit/5692aceb1f8025d873e1c5ca6d8680c6d6c5f407))
 
 ## [5.3.0] - 2026-10-11
 
 ### Added
 
-- Telegram message for every human click that was redirected to a store: project, time (Brasília), product, page and destination.
-- Weekly click report on Telegram, every Sunday at 17:00 (Brasília): clicks of the last 7 days per project (`/api/cron/weekly`).
+- **telegram:** Send a message for every human click redirected to a store: project, time (Brasília), product, page and destination ([c6a5ce0](https://github.com/AlexGalhardo/vukem-links/commit/c6a5ce0177a980083fae72001ff3a1f7f2aa207f))
+- **telegram:** Send a weekly click report every Sunday at 17:00 (Brasília) with the clicks of the last 7 days per project ([c6a5ce0](https://github.com/AlexGalhardo/vukem-links/commit/c6a5ce0177a980083fae72001ff3a1f7f2aa207f))
 
 ### Changed
 
-- The link health check runs every hour instead of once a day; a link that dies is still reported on Telegram.
+- **health:** Check link health every hour instead of once a day; a link that dies is still reported on Telegram ([c6a5ce0](https://github.com/AlexGalhardo/vukem-links/commit/c6a5ce0177a980083fae72001ff3a1f7f2aa207f))
 
 ## [5.2.0] - 2026-10-11
 
 ### Added
 
-- `PUT /api/v1/links`: full sync of a project's catalogue. It updates product fields, replaces each product's link set in the payload order and removes what the project no longer publishes.
-- Optional `store` parameter on `/link?id=`, for pages with one button per store.
-- A project only receives links while its site is online: the API answers `409 project_offline`, and the dashboard refuses to create a project, save a product or import for a site that does not answer.
-- The contract between the sites and this dashboard, in `docs/api.md`.
+- **api:** Add `PUT /api/v1/links` to sync a project's whole catalogue: update products, replace each link set in payload order and remove what the project no longer publishes ([e3e7137](https://github.com/AlexGalhardo/vukem-links/commit/e3e7137c3d5dffa6f73479f50bed28d5cc94d007))
+- **link:** Add the optional `store` parameter to `/link?id=`, for pages with one button per store ([e3e7137](https://github.com/AlexGalhardo/vukem-links/commit/e3e7137c3d5dffa6f73479f50bed28d5cc94d007))
+- **api:** Accept links only while the project's site is online (`409 project_offline`), in the API, forms and import ([e3e7137](https://github.com/AlexGalhardo/vukem-links/commit/e3e7137c3d5dffa6f73479f50bed28d5cc94d007))
+- **docs:** Document the contract between the sites and the dashboard in `docs/api.md` ([e3e7137](https://github.com/AlexGalhardo/vukem-links/commit/e3e7137c3d5dffa6f73479f50bed28d5cc94d007))
 
 ### Changed
 
-- A product without links is refused everywhere (API, form and import).
-- Production runs on `https://links.example.com` (Vercel project `links-example-com`, Turso database from the Vercel Marketplace).
+- **catalog:** Refuse a product without links everywhere (API, form and import) ([e3e7137](https://github.com/AlexGalhardo/vukem-links/commit/e3e7137c3d5dffa6f73479f50bed28d5cc94d007))
 
 ## [5.1.0] - 2026-10-11
 
 ### Added
 
-- Integration tests for the data layer, the health check, the cron and project API routes and the v4 migration script, running against a throwaway SQLite file.
-- QA checks for table filters, sorting, pagination, bulk actions, click country, mobile width and color scheme.
-- Show/hide password eye icon inside the password field on the login form.
-- Light/dark theme toggle in the navbar, remembered per browser.
-- Hamburger menu for the main navigation on narrow screens.
-- "Checar todos os links" button on the overview's dead links panel, running the health check over every registered link.
+- **test:** Add integration tests for the data layer, health check, cron and project API routes and the v4 migration script ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
+- **test:** Add QA checks for table filters, sorting, pagination, bulk actions, click country, mobile width and color scheme ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
+- **auth:** Add a show/hide password toggle on the login form ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
+- **web:** Add a light/dark theme toggle remembered per browser, and a hamburger menu on narrow screens ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
+- **health:** Add the "Checar todos os links" button to the dead links panel ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
 
 ### Changed
 
-- Repository moved to `AlexGalhardo/links.example.com` with a fresh history; `_legacy/` (v4 code) removed.
-- Dark is now the default theme regardless of the OS preference.
-- `seed.json` and `bun run db:seed` now load the EletroRadar project (`https://example.com`, 381 products) instead of Produtos Tech.
+- **repo:** Start a fresh history and remove `_legacy/` (v4 code) ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
+- **web:** Make dark the default theme regardless of the OS preference ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
+- **seed:** Load the EletroRadar project (381 products) from `seed.json` ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
 
 ### Fixed
 
-- Overview page no longer scrolls horizontally on narrow screens.
-- `commitlint.config.js` loads under the package's ES module mode.
+- **web:** Stop the overview page from scrolling horizontally on narrow screens ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
+- **ci:** Load `commitlint.config.js` under the package's ES module mode ([557f5fb](https://github.com/AlexGalhardo/vukem-links/commit/557f5fb0f4579d58c0039cce7db1acd03a43b4f5))
 
 ## [5.0.0] - 2026-10-10
 
-Rewrite around three questions: is the link alive, where is it, and how many clicks did it get on which device.
-
 ### Added
 
-- Projects: every product (page) and its affiliate links belong to a project, with a per-project page.
-- Per-click events with device, OS, browser, country, source page and a bot flag.
-- Link health check (HTTP status and final URL) with daily cron, manual check and Telegram alert when a link dies.
-- Several affiliate links per product in a manual priority order; the redirect uses the first one that is not dead and falls back to the product page when all are dead.
-- Overview, links table (search, filters, sorting, bulk check and delete), link detail and project screens.
-- JSON/CSV import and `POST /api/v1/links`, authenticated by a per-project token.
-- `qa.ts` end-to-end QA for this project, unit tests for the link rules, `bun run ci` gate.
-- `setups/` scripts for Unix, Windows and Docker.
-- Documentation under `docs/`, `PLAN.md`, agent guide, project rules and skills under `.claude/`.
-- Commit message linting (Conventional Commits) and a manual-only GitHub Actions workflow.
+- **BREAKING:** **repo:** Rebuild around three questions: is the link alive, where is it, and how many clicks did it get on which device ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **catalog:** Group every product (page) and its affiliate links under a project, with a per-project page ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **clicks:** Record each click with device, OS, browser, country, source page and a bot flag ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **health:** Check link health (HTTP status and final URL) daily and on demand, with a Telegram alert when a link dies ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **link:** Keep several affiliate links per product in priority order and redirect to the first live one, falling back to the product page ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **web:** Add the overview, links table (search, filters, sorting, bulk check and delete), link detail and project screens ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **api:** Add JSON/CSV import and `POST /api/v1/links` ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **test:** Add the end-to-end QA, unit tests for the link rules and the `bun run ci` gate ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **docs:** Add `docs/`, `PLAN.md`, the agent guide, project rules and skills ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
 
 ### Changed
 
-- **BREAKING:** new database schema (`projects`, `products`, `affiliate_links`, `click_events`, `link_checks`). Existing data must be copied with `bun run db:migrate-v4`; see `docs/migration-v4.md`.
-- **BREAKING:** authentication moved from next-auth to Better Auth. The admin account is recreated by `bun run db:seed`; v4 passwords are not migrated.
-- `/link?id=` is now a server-side 302 and no longer picks a random link. The URL format is unchanged.
-- `/link` with a missing or unknown id answers 404 instead of redirecting to the dashboard.
-- UI rebuilt on Base UI and Tailwind CSS v4 tokens, following the system light/dark preference.
-- Client data fetching and mutations go through TanStack Query.
-- All dependencies pinned to exact stable versions; Next.js 16.4, React 19.3, TypeScript 7.0.
-- Database migrations are versioned in `drizzle/` instead of `drizzle-kit push`.
+- **BREAKING:** **database:** Use a new schema (`projects`, `products`, `affiliate_links`, `click_events`, `link_checks`); copy existing data with `bun run db:migrate-v4` ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **BREAKING:** **auth:** Move from next-auth to Better Auth; the admin account is recreated by the seed ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **link:** Answer `/link?id=` with a server-side 302 to the first live link instead of a random one, and 404 for a missing or unknown id ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **deps:** Pin every dependency to an exact stable version ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
 
 ### Removed
 
-- shadcn/ui, Radix UI and about 70 unused dependencies.
-- Bitly URL field and dialogs.
-- Master category / category / subcategory hierarchy (category is now an optional text on the product).
-- Public sign-up.
+- **deps:** Remove shadcn/ui, Radix UI and about 70 unused dependencies ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **web:** Remove the Bitly field, the category hierarchy and public sign-up ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
 
 ### Security
 
-- Affiliate URLs are restricted to public http(s) hosts; product pages must belong to the project's domain.
-- Sign-in rate limiting backed by the database.
-- Project API tokens are stored as SHA-256 hashes; the cron endpoint requires `CRON_SECRET`.
-- Security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`); `X-Powered-By` removed.
-- Type errors no longer ignored at build time (`ignoreBuildErrors` removed).
+- **link:** Restrict affiliate URLs to public http(s) hosts and product pages to the project's domain ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **auth:** Rate-limit sign-in, backed by the database ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
+- **web:** Add security headers, remove `X-Powered-By` and stop ignoring type errors at build time ([0e8f76d](https://github.com/AlexGalhardo/vukem-links/commit/0e8f76da5bca871fdfd42575a1eccf29c2a245c6))
 
-[Unreleased]: https://github.com/AlexGalhardo/links.example.com/compare/v6.2.1...HEAD
-[6.2.1]: https://github.com/AlexGalhardo/links.example.com/compare/v6.2.0...v6.2.1
-[6.2.0]: https://github.com/AlexGalhardo/links.example.com/compare/v6.1.0...v6.2.0
-[6.1.0]: https://github.com/AlexGalhardo/links.example.com/compare/v6.0.0...v6.1.0
-[6.0.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.4.0...v6.0.0
-[5.4.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.3.0...v5.4.0
-[5.3.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.2.0...v5.3.0
-[5.2.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.1.0...v5.2.0
-[5.1.0]: https://github.com/AlexGalhardo/links.example.com/compare/v5.0.0...v5.1.0
-[5.0.0]: https://github.com/AlexGalhardo/links.example.com/releases/tag/v5.0.0
+[Unreleased]: https://github.com/AlexGalhardo/vukem-links/compare/v6.2.1...HEAD
+[6.2.1]: https://github.com/AlexGalhardo/vukem-links/compare/v6.2.0...v6.2.1
+[6.2.0]: https://github.com/AlexGalhardo/vukem-links/compare/v6.1.0...v6.2.0
+[6.1.0]: https://github.com/AlexGalhardo/vukem-links/compare/v6.0.0...v6.1.0
+[6.0.0]: https://github.com/AlexGalhardo/vukem-links/compare/v5.4.0...v6.0.0
+[5.4.0]: https://github.com/AlexGalhardo/vukem-links/compare/v5.3.0...v5.4.0
+[5.3.0]: https://github.com/AlexGalhardo/vukem-links/compare/v5.2.0...v5.3.0
+[5.2.0]: https://github.com/AlexGalhardo/vukem-links/compare/v5.1.0...v5.2.0
+[5.1.0]: https://github.com/AlexGalhardo/vukem-links/compare/v5.0.0...v5.1.0
+[5.0.0]: https://github.com/AlexGalhardo/vukem-links/releases/tag/v5.0.0
