@@ -81,6 +81,7 @@ Go 1.27 · [vukem](https://github.com/AlexGalhardo/vukem) 0.43 (rotas, ORM, auth
 
 | | |
 | --- | --- |
+| [Site de docs](https://alexgalhardo.github.io/vukem-links/) | Esta documentação publicada (`site/`) |
 | [`PLAN.md`](PLAN.md) | Estado atual, pendências e próximos passos |
 | [`CHANGELOG.md`](CHANGELOG.md) | Histórico de versões |
 | [`docs/setup.md`](docs/setup.md) | Variáveis de ambiente, local e Docker |

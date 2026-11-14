@@ -31,7 +31,8 @@ Go 1.27 · vukem 0.43 (rotas, ORM, auth, scheduler, Inertia) · SQLite · Inerti
 | `resources/js/` | Páginas, layouts, `components/ui` (shadcn-style), `LinksTable`, `stats` |
 | `tests/` | Testes HTTP do servidor com `vukemtest` (redirect, API, login, dashboard) |
 | `e2e/`, `scripts/e2e-server.ts` | Playwright com banco novo por execução |
-| `Dockerfile`, `compose.yaml`, `scripts/smoke.sh` | Imagem, compose e smoke |
+| `Dockerfile`, `compose.yaml`, `scripts/smoke.sh`, `scripts/integration-smoke.sh` | Imagem, compose, smoke e integração com o eletroradar |
+| `site/` | Site de docs (Astro, GitHub Pages em `/vukem-links/`); `npm run sync:docs` regenera `content/` de `README.md` e `docs/` |
 
 ## Regras do projeto
 
